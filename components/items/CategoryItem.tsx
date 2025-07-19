@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1, // 너비와 높이를 같게 하여 정사각형 형태로 유지
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f3f3',
+    backgroundColor: 'rgba(250, 250, 250, 0.5)', // <-- 이 줄로 변경! (50% 투명)
     borderRadius: 10,
     padding: 10,
     margin: 5, // 아이템 간의 간격

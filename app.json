@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "biugo",
+    "name": "비우GO",
     "slug": "biugo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,14 +9,22 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.biugo", 
+      "infoPlist": {
+        "NSCameraUsageDescription": "이 앱은 바코드 및 QR 코드 스캔을 위해 카메라 접근 권한이 필요합니다."
+      } 
     },
     "android": {
+      "package": "com.yourcompany.biugo",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +41,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-barcode-scanner"
     ],
     "experiments": {
       "typedRoutes": true
