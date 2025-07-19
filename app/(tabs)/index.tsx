@@ -1,12 +1,18 @@
 import { Image } from 'expo-image';
 import { Text, View, SafeAreaView, StyleSheet, ScrollView } from 'react-native'; // ScrollView 추가
 import SearchInput from '@/components/common/SearchInput';
+import CategoryGrid from '@/components/layout/CategoryGrid'; 
 
 export default function HomeScreen() {
   const handleSearchSubmit = (query: string) => {
     console.log('검색어:', query);
     // 여기에 검색어를 처리하는 로직 추가 가능
   };
+  const handleCategoryPress = (categoryName: string) => {
+    console.log(`${categoryName} 카테고리 클릭`);
+    // 여기에 카테고리 클릭 시 처리할 로직 추가 가능
+  };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -30,9 +36,9 @@ export default function HomeScreen() {
 
         <View style={styles.textArea}>
           <Text style={styles.categoryText}>카테고리</Text>
-          <Text style={styles.descriptionText}>리액트 네이티브로 모바일 앱을 개발해보세요!</Text>
         </View>
 
+        <CategoryGrid onCategoryPress={handleCategoryPress} />
 
       </ScrollView>
     </SafeAreaView>
@@ -51,7 +57,6 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 20, // 전체적인 좌우 패딩을 여기에 줄 수 있습니다.
   },
 
-  // === 1. 상단 이미지/데코레이션 영역 스타일 ===
   topDecorationArea: {
     height: 300, // 이 영역의 고정 높이 (조정 필요)
     justifyContent: 'center', // 이 영역 안에서 지구본 이미지 세로 중앙 정렬
@@ -66,7 +71,6 @@ const styles = StyleSheet.create({
   },
 
 
-  // === 2. 검색창 영역 스타일 ===
   searchArea: {
     // 이 영역은 topDecorationArea 바로 아래에 옵니다.
     // SearchInput 컴포넌트 자체에 paddingHorizontal이 있으므로 여기서는 추가 패딩은 주지 않습니다.
@@ -75,7 +79,6 @@ const styles = StyleSheet.create({
     marginBottom: 20, // 검색창 아래 여백
   },
 
-  // === 3. 텍스트 영역 스타일 ===
   textArea: {
     alignItems: 'flex-start', 
     marginBottom: 20, // 아래 카테고리 영역과의 간격
@@ -86,10 +89,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 10, // 아래 descriptionText와의 간격
-  },
-  descriptionText: {
-    fontSize: 18,
-    color: '#666',
   },
     dividerLine: {
     height: 1, // 선의 두께 (1dp)
