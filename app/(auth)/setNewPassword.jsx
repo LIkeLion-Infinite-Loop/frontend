@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import InputField from '../components/InputField';
+import InputField from '../../components/InputField';
 
 export default function SetNewPassword() {
   const [password, setPassword] = useState('');
@@ -38,7 +38,7 @@ export default function SetNewPassword() {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={goHome} style={styles.homeButton}>
-        <Image source={require('../assets/images/home_logo.png')} style={styles.homeLogo} />
+        <Image source={require('../../assets/images/home_logo.png')} style={styles.homeLogo} />
       </TouchableOpacity>
     </View>
   );

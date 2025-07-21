@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import BiugoLogo from '../assets/images/gr_biugo.svg';
-import InputField from '../components/InputField';
+import InputField from '../../components/InputField';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -14,8 +13,10 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <BiugoLogo width={160} height={48} style={styles.logo} />
-
+      <Image
+        source={require('../../assets/images/gr_biugo.png')}
+        style={styles.logo}
+      />
       <View style={styles.form}>
         <Text style={styles.label}>아이디</Text>
         <InputField placeholder="이메일 또는 아이디" value={email} onChangeText={setEmail} />
@@ -25,7 +26,7 @@ export default function LoginScreen() {
       </View>
 
       <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Image source={require('../assets/images/earth.png')} style={styles.earth} />
+        <Image source={require('../../assets/images/earth.png')} style={styles.earth} />
         <Text style={styles.loginText}>로그인</Text>
       </TouchableOpacity>
 
@@ -53,8 +54,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
+    width: 160,
+    height: 48,
+    resizeMode: 'contain', // 이미지가 잘리지 않도록
     marginBottom: 32,
-    color: '#05D16E', // 비우GO 로고 컬러
   },
   form: {
     width: '100%',

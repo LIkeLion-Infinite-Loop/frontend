@@ -1,55 +1,47 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import InputField from '../components/InputField';
+import InputField from '../../components/InputField';
 
-export default function SignupScreen() {
+export default function ResetPassword() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState('');
-  const [password, setPassword] = useState('');
 
-  const handleSignup = () => {
-    // 여기에 API 연결 예정
-    router.push('/success');
+  const handleVerify = () => {
+    // 예시 조건 (실제 API 연동 필요)
+    if (name === '홍길동' && email === 'test@example.com' && userId === 'gildong123') {
+      router.push('/setNewPassword');
+    } else {
+      alert('일치하는 사용자 정보가 없습니다.');
+    }
   };
 
-  const handleGoHome = () => {
-    router.push('/'); // 첫 화면 (index.jsx)
+  const goHome = () => {
+    router.push('/');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>회원 가입</Text>
+      <Text style={styles.title}>비밀번호 재설정</Text>
 
       <View style={styles.form}>
         <Text style={styles.label}>이름</Text>
-        <InputField value={name} onChangeText={setName} placeholder="이름" />
+        <InputField placeholder="이름" value={name} onChangeText={setName} />
 
         <Text style={styles.label}>이메일</Text>
-        <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
+        <InputField placeholder="이메일" value={email} onChangeText={setEmail} />
 
         <Text style={styles.label}>아이디</Text>
-        <InputField value={userId} onChangeText={setUserId} placeholder="아이디" />
-
-        <Text style={styles.label}>비밀번호</Text>
-        <InputField
-          value={password}
-          onChangeText={setPassword}
-          placeholder="비밀번호"
-          secureTextEntry
-        />
+        <InputField placeholder="아이디" value={userId} onChangeText={setUserId} />
       </View>
 
-      <TouchableOpacity onPress={handleSignup}>
-        <Text style={styles.signupButton}>가입하기</Text>
+      <TouchableOpacity onPress={handleVerify}>
+        <Text style={styles.submit}>확인</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
-        <Image
-          source={require('../assets/images/home_logo.png')}
-          style={styles.homeLogo}
-        />
+      <TouchableOpacity onPress={goHome} style={styles.homeButton}>
+        <Image source={require('../../assets/images/home_logo.png')} style={styles.homeLogo} />
       </TouchableOpacity>
     </View>
   );
@@ -78,16 +70,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 12,
   },
-  signupButton: {
+  submit: {
     fontSize: 20,
     fontFamily: 'NotoSansKRRegular',
     textAlign: 'center',
     color: '#05D16E',
     marginTop: 24,
-    marginBottom: 16,
   },
   homeButton: {
     alignItems: 'center',
+    marginTop: 32,
   },
   homeLogo: {
     width: 50,

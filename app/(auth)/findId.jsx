@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import InputField from '../components/InputField';
+import InputField from '../../components/InputField';
 
 export default function FindIdScreen() {
   const [name, setName] = useState('');
@@ -48,7 +48,7 @@ export default function FindIdScreen() {
       )}
 
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
-        <Image source={require('../assets/images/home_logo.png')} style={styles.homeLogo} />
+        <Image source={require('../../assets/images/home_logo.png')} style={styles.homeLogo} />
       </TouchableOpacity>
     </View>
   );
