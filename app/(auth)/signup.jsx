@@ -10,14 +10,48 @@ export default function SignupScreen() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
 
-  // ✅ 회원가입 처리
-  const handleSignup = async () => {
-    try {
-      const response = await axios.post('http://192.168.0.36:3000/register', {
-        email,
-        name,
-        password,
-      });
+// <<<<<<< csy
+//   // ✅ 회원가입 처리
+//   const handleSignup = async () => {
+//     try {
+//       const response = await axios.post('http://192.168.0.36:3000/register', {
+//         email,
+//         name,
+//         password,
+//       });
+// =======
+const handleSignUp = async () => {
+  if (!name || !email || !userId || !password) {
+    Alert.alert('입력 오류', '모든 필드를 입력해주세요.');
+    return;
+  }
+
+  try {
+    // 'YOUR_LOCAL_IP' 부분에 위에서 찾은 IP 주소를 넣으세요.
+    const response = await fetch('http://119.206.86.243:3000/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,       
+        password: password, 
+        name: name,         
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      Alert.alert('성공', '회원가입이 완료되었습니다.');
+      router.replace('/(tabs)');
+    } else {
+      Alert.alert('오류', data.message);
+    }
+  } catch (error) {
+    console.error('회원가입 요청 오류:', error);
+  }
+};
 
       if (response.status === 201) {
         Alert.alert('✅', '회원가입이 완료되었습니다.');
@@ -58,7 +92,7 @@ export default function SignupScreen() {
         />
       </View>
 
-      <TouchableOpacity onPress={handleSignup}>
+      <TouchableOpacity onPress={handleSignUp}>
         <Text style={styles.signupButton}>가입하기</Text>
       </TouchableOpacity>
 
