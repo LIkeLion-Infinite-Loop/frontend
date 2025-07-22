@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Image, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function IntroScreen() {
   return (

@@ -1,21 +1,44 @@
+// app/signup.jsx
+
+import axios from 'axios'; // ✅ axios import
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
 
 export default function SignupScreen() {
+  // ✅ 사용자 입력값 상태 선언
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId] = useState(''); // UI에서만 사용됨
   const [password, setPassword] = useState('');
 
-  const handleSignup = () => {
-    // 여기에 API 연결 예정
-    router.push('/success');
+  // ✅ 회원가입 요청 처리 함수
+  const handleSignup = async () => {
+    try {
+      const response = await axios.post('http://localhost:8080/api/users/signup', {
+        email,
+        name,
+        password,
+      });
+
+      if (response.data.message === '회원가입 완료') {
+        Alert.alert('✅', '회원가입이 완료되었습니다.');
+        router.push('/login');
+      }
+    } catch (error) {
+      if (error.response?.status === 409) {
+        Alert.alert('⚠️', '이미 존재하는 이메일입니다.');
+      } else {
+        console.error(error);
+        Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
+      }
+    }
   };
 
+  // ✅ 홈(인트로)으로 이동
   const handleGoHome = () => {
-    router.push('/'); // 첫 화면 (index.jsx)
+    router.push('/');
   };
 
   return (
@@ -41,10 +64,12 @@ export default function SignupScreen() {
         />
       </View>
 
+      {/* ✅ 가입하기 버튼 */}
       <TouchableOpacity onPress={handleSignup}>
         <Text style={styles.signupButton}>가입하기</Text>
       </TouchableOpacity>
 
+      {/* ✅ 홈으로 이동하는 하단 버튼 */}
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
         <Image
           source={require('../../assets/images/home_logo.png')}
@@ -55,6 +80,7 @@ export default function SignupScreen() {
   );
 }
 
+// ✅ 스타일 정의
 const styles = StyleSheet.create({
   container: {
     flex: 1,
