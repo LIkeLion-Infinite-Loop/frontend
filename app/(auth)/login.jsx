@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       // 🔸 로그인 API 호출
-      const res = await axios.post('https://your-backend-url.com/api/users/login', {
+      const res = await axios.post('https://100.100.100.128:3000/api/users/login', {
         email,
         password,
       });

@@ -1,28 +1,25 @@
-// app/signup.jsx
-
-import axios from 'axios'; // ✅ axios import
+import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
 
 export default function SignupScreen() {
-  // ✅ 사용자 입력값 상태 선언
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [userId, setUserId] = useState(''); // UI에서만 사용됨
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
 
-  // ✅ 회원가입 요청 처리 함수
+  // ✅ 회원가입 처리
   const handleSignup = async () => {
     try {
-      const response = await axios.post('http://localhost:8080/api/users/signup', {
+      const response = await axios.post('http://100.100.100.128:3000/register', {
         email,
         name,
         password,
       });
 
-      if (response.data.message === '회원가입 완료') {
+      if (response.status === 201) {
         Alert.alert('✅', '회원가입이 완료되었습니다.');
         router.push('/login');
       }
@@ -31,15 +28,12 @@ export default function SignupScreen() {
         Alert.alert('⚠️', '이미 존재하는 이메일입니다.');
       } else {
         console.error(error);
-        Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
+        Alert.alert('❌', '서버 오류가 발생했습니다.');
       }
     }
   };
 
-  // ✅ 홈(인트로)으로 이동
-  const handleGoHome = () => {
-    router.push('/');
-  };
+  const handleGoHome = () => router.push('/');
 
   return (
     <View style={styles.container}>
@@ -64,12 +58,10 @@ export default function SignupScreen() {
         />
       </View>
 
-      {/* ✅ 가입하기 버튼 */}
       <TouchableOpacity onPress={handleSignup}>
         <Text style={styles.signupButton}>가입하기</Text>
       </TouchableOpacity>
 
-      {/* ✅ 홈으로 이동하는 하단 버튼 */}
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
         <Image
           source={require('../../assets/images/home_logo.png')}
@@ -80,7 +72,6 @@ export default function SignupScreen() {
   );
 }
 
-// ✅ 스타일 정의
 const styles = StyleSheet.create({
   container: {
     flex: 1,
