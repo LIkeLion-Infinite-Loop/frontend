@@ -7,9 +7,32 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    router.push('/success');
-  };
+const handleLogin = async () => {
+  try {
+    // 1. 로컬 서버에 로그인 요청
+    const response = await fetch('http://119.206.86.243:3000/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    // 2. 서버로부터 성공 응답을 받으면
+    if (response.ok) {
+      // 3. 홈 화면으로 이동
+      router.replace('/(tabs)'); // ✅ 이 코드를 추가하세요!
+    } else {
+      // 로그인 실패 시
+      alert(data.message);
+    }
+  } catch (error) {
+    console.error('로그인 요청 오류:', error);
+    alert('로그인 중 문제가 발생했습니다.');
+  }
+};
 
   return (
     <View style={styles.container}>

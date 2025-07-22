@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
 
 export default function SignupScreen() {
@@ -9,10 +9,38 @@ export default function SignupScreen() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSignup = () => {
-    // 여기에 API 연결 예정
-    router.push('/success');
-  };
+const handleSignUp = async () => {
+  if (!name || !email || !userId || !password) {
+    Alert.alert('입력 오류', '모든 필드를 입력해주세요.');
+    return;
+  }
+
+  try {
+    // 'YOUR_LOCAL_IP' 부분에 위에서 찾은 IP 주소를 넣으세요.
+    const response = await fetch('http://119.206.86.243:3000/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,       
+        password: password, 
+        name: name,         
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      Alert.alert('성공', '회원가입이 완료되었습니다.');
+      router.replace('/(tabs)');
+    } else {
+      Alert.alert('오류', data.message);
+    }
+  } catch (error) {
+    console.error('회원가입 요청 오류:', error);
+  }
+};
 
   const handleGoHome = () => {
     router.push('/'); // 첫 화면 (index.jsx)
@@ -41,7 +69,7 @@ export default function SignupScreen() {
         />
       </View>
 
-      <TouchableOpacity onPress={handleSignup}>
+      <TouchableOpacity onPress={handleSignUp}>
         <Text style={styles.signupButton}>가입하기</Text>
       </TouchableOpacity>
 
