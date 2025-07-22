@@ -73,6 +73,48 @@ app.post('/login', (req, res) => {
   }
 });
 
+// ✅ 3. 아이디 찾기 API
+app.post('/api/users/find-id', (req, res) => {
+    const { name, email } = req.body;
+  
+    const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+    const user = db.users.find((u) => u.name === name && u.email === email);
+  
+    if (user) {
+      res.status(200).json({ user_id: user.id });
+    } else {
+      res.status(404).json({ message: '일치하는 사용자가 없습니다.' });
+    }
+  });
+  
+// 4. 비밀번호 재설정 API (/api/auth/reset-password)
+app.post('/api/auth/reset-password', (req, res) => {
+    const { name, email } = req.body;
+  
+    // 필수 정보 누락 시 400
+    if (!name || !email) {
+      return res.status(400).json({ message: '이름과 이메일을 모두 입력해주세요.' });
+    }
+  
+    const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+    const user = db.users.find(u => u.name === name && u.email === email);
+  
+    if (!user) {
+      return res.status(404).json({ message: '일치하는 사용자를 찾을 수 없습니다.' });
+    }
+  
+    // 인증코드 생성 (실제로 이메일 보내는 로직은 생략)
+    const authCode = Math.floor(100000 + Math.random() * 900000).toString();
+  
+    console.log(`📧 ${email}로 인증코드 전송됨: ${authCode}`);
+  
+    // 여기서는 인증코드를 반환하지만 실제 앱에서는 이메일로 보내야 함
+    res.status(200).json({
+      message: '비밀번호 재설정을 위한 인증코드가 이메일로 전송되었습니다.',
+      authCode: authCode, // 실제 서비스에서는 이걸 응답에 넣지 않음
+    });
+  });
+
 // ✅ 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 로컬 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
