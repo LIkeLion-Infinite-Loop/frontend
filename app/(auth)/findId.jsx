@@ -1,54 +1,62 @@
+// app/(auth)/findId.jsx
+import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
 
 export default function FindIdScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [foundId, setFoundId] = useState(null);
+  const [foundId, setFoundId] = useState('');
 
-  const handleFindId = () => {
-    // ✅ 실제론 API로 사용자 확인 후 결과 반환
-    if (name === '홍길동' && email === 'test@example.com') {
-      setFoundId('gildong123');
-    } else {
-      setFoundId(''); // 결과 없음
+  const handleFindId = async () => {
+    try {
+      const response = await axios.post('http://192.168.0.36:3000/api/users/find-id', {
+        name,
+        email,
+      });
+
+      if (response.data?.user_id) {
+        setFoundId(response.data.user_id);
+      } else {
+        Alert.alert('❌', '아이디를 찾을 수 없습니다.');
+      }
+    } catch (err) {
+      console.error('아이디 찾기 오류:', err);
+      Alert.alert('⚠️', err.response?.data?.message || '서버 오류가 발생했습니다.');
     }
   };
 
-  const handleGoHome = () => {
-    router.push('/');
-  };
+  const handleGoHome = () => router.push('/');
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>아이디 찾기</Text>
 
-      {foundId === null ? (
-        <View style={styles.form}>
-          <Text style={styles.label}>이름</Text>
-          <InputField value={name} onChangeText={setName} placeholder="이름" />
+      <View style={styles.form}>
+        <Text style={styles.label}>이름</Text>
+        <InputField value={name} onChangeText={setName} placeholder="이름" />
 
-          <Text style={styles.label}>이메일</Text>
-          <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
+        <Text style={styles.label}>이메일</Text>
+        <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
+      </View>
 
-          <TouchableOpacity onPress={handleFindId}>
-            <Text style={styles.confirmText}>확인</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultText}>사용자님의 아이디는</Text>
-          <View style={styles.resultBox}>
-            <Text style={styles.resultIdText}>{foundId || '일치하는 정보가 없습니다.'}</Text>
-          </View>
-          <Text style={styles.resultText}>입니다.</Text>
+      <TouchableOpacity onPress={handleFindId}>
+        <Text style={styles.findButton}>아이디 찾기</Text>
+      </TouchableOpacity>
+
+      {foundId !== '' && (
+        <View style={styles.resultBox}>
+          <Text style={styles.resultText}>🔍 찾은 아이디: {foundId}</Text>
         </View>
       )}
 
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
-        <Image source={require('../../assets/images/home_logo.png')} style={styles.homeLogo} />
+        <Image
+          source={require('../../assets/images/home_logo.png')}
+          style={styles.homeLogo}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -77,36 +85,28 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 12,
   },
-  confirmText: {
+  findButton: {
     fontSize: 20,
     fontFamily: 'NotoSansKRRegular',
-    color: '#05D16E',
     textAlign: 'center',
+    color: '#05D16E',
     marginTop: 24,
+    marginBottom: 16,
   },
-  resultContainer: {
-    alignItems: 'center',
+  resultBox: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
   },
   resultText: {
     fontSize: 20,
-    fontFamily: 'NotoSansKRRegular',
-    marginBottom: 12,
-  },
-  resultBox: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    minWidth: '70%',
-    alignItems: 'center',
-  },
-  resultIdText: {
-    fontSize: 20,
+    color: '#000',
+    textAlign: 'center',
     fontFamily: 'NotoSansKRRegular',
   },
   homeButton: {
     alignItems: 'center',
-    marginTop: 32,
   },
   homeLogo: {
     width: 50,

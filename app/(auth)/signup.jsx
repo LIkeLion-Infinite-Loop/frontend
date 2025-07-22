@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -9,6 +10,16 @@ export default function SignupScreen() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
 
+// <<<<<<< csy
+//   // ✅ 회원가입 처리
+//   const handleSignup = async () => {
+//     try {
+//       const response = await axios.post('http://192.168.0.36:3000/register', {
+//         email,
+//         name,
+//         password,
+//       });
+// =======
 const handleSignUp = async () => {
   if (!name || !email || !userId || !password) {
     Alert.alert('입력 오류', '모든 필드를 입력해주세요.');
@@ -42,9 +53,21 @@ const handleSignUp = async () => {
   }
 };
 
-  const handleGoHome = () => {
-    router.push('/'); // 첫 화면 (index.jsx)
+      if (response.status === 201) {
+        Alert.alert('✅', '회원가입이 완료되었습니다.');
+        router.push('/login');
+      }
+    } catch (error) {
+      if (error.response?.status === 409) {
+        Alert.alert('⚠️', '이미 존재하는 이메일입니다.');
+      } else {
+        console.error(error);
+        Alert.alert('❌', '서버 오류가 발생했습니다.');
+      }
+    }
   };
+
+  const handleGoHome = () => router.push('/');
 
   return (
     <View style={styles.container}>

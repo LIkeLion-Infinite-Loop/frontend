@@ -1,11 +1,11 @@
-import { Stack } from 'expo-router';
-import { useFonts } from 'expo-font';
-import { useEffect, useState } from 'react'; // useState 훅 임포트 확인
-import * as SplashScreen from 'expo-splash-screen';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react'; // useState 훅 임포트 확인
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 // 앱 로딩 시 스플래시 스크린이 자동으로 숨겨지는 것을 방지 (가장 먼저 실행됩니다)
 SplashScreen.preventAutoHideAsync();

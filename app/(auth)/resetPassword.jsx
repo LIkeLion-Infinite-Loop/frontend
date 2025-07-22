@@ -1,25 +1,36 @@
+// app/resetPassword.jsx
+import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
 
-export default function ResetPassword() {
+export default function ResetPasswordScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [userId, setUserId] = useState('');
 
-  const handleVerify = () => {
-    // 예시 조건 (실제 API 연동 필요)
-    if (name === '홍길동' && email === 'test@example.com' && userId === 'gildong123') {
-      router.push('/setNewPassword');
-    } else {
-      alert('일치하는 사용자 정보가 없습니다.');
+  // ✅ 비밀번호 재설정 요청
+  const handleReset = async () => {
+    try {
+      // 실제 서버는 user_id 없이 이름, 이메일만 받도록 수정돼 있어야 함
+      const response = await axios.post('http://192.168.0.36:3000/api/auth/reset-password', {
+        name,
+        email,
+      });
+
+      if (response.data?.message?.includes('인증코드')) {
+        Alert.alert('✅', '인증코드 전송 완료');
+        router.push('/setNewPassword'); // 비밀번호 재설정 화면 이동
+      } else {
+        Alert.alert('❌', '일치하는 사용자를 찾을 수 없습니다.');
+      }
+    } catch (err) {
+      console.error('재설정 요청 오류:', err);
+      Alert.alert('⚠️', '서버 오류가 발생했습니다.');
     }
   };
 
-  const goHome = () => {
-    router.push('/');
-  };
+  const handleGoHome = () => router.push('/');
 
   return (
     <View style={styles.container}>
@@ -27,21 +38,21 @@ export default function ResetPassword() {
 
       <View style={styles.form}>
         <Text style={styles.label}>이름</Text>
-        <InputField placeholder="이름" value={name} onChangeText={setName} />
+        <InputField value={name} onChangeText={setName} placeholder="이름" />
 
         <Text style={styles.label}>이메일</Text>
-        <InputField placeholder="이메일" value={email} onChangeText={setEmail} />
-
-        <Text style={styles.label}>아이디</Text>
-        <InputField placeholder="아이디" value={userId} onChangeText={setUserId} />
+        <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
       </View>
 
-      <TouchableOpacity onPress={handleVerify}>
-        <Text style={styles.submit}>확인</Text>
+      <TouchableOpacity onPress={handleReset}>
+        <Text style={styles.resetButton}>확인</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={goHome} style={styles.homeButton}>
-        <Image source={require('../../assets/images/home_logo.png')} style={styles.homeLogo} />
+      <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
+        <Image
+          source={require('../../assets/images/home_logo.png')}
+          style={styles.homeLogo}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -70,16 +81,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginTop: 12,
   },
-  submit: {
+  resetButton: {
     fontSize: 20,
     fontFamily: 'NotoSansKRRegular',
     textAlign: 'center',
     color: '#05D16E',
     marginTop: 24,
+    marginBottom: 16,
   },
   homeButton: {
     alignItems: 'center',
-    marginTop: 32,
   },
   homeLogo: {
     width: 50,
