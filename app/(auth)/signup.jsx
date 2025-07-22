@@ -13,7 +13,7 @@ export default function SignupScreen() {
   // ✅ 회원가입 처리
   const handleSignup = async () => {
     try {
-      const response = await axios.post('http://100.100.100.128:3000/register', {
+      const response = await axios.post('http://192.168.0.36:3000/register', {
         email,
         name,
         password,

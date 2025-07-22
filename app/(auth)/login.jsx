@@ -1,45 +1,31 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import {
-  Alert,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
 
 export default function LoginScreen() {
-  // 🔹 상태값: 입력된 이메일, 비밀번호
+  // ✅ 상태 관리
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // 🔹 로그인 버튼 클릭 시 실행되는 함수
+  // ✅ 로그인 처리 함수
   const handleLogin = async () => {
+    console.log('입력된 이메일:', email);
+    console.log('입력된 비밀번호:', password);
+
     try {
-      // 🔸 로그인 API 호출
-      const res = await axios.post('https://100.100.100.128:3000/api/users/login', {
+      const response = await axios.post('http://192.168.0.36:3000/login', {
         email,
         password,
       });
 
-      // 🔸 응답에서 토큰 추출
-      const { accessToken, refreshToken } = res.data;
-
-      // 🔸 토큰을 AsyncStorage에 저장 (앱 전역에서 사용 가능)
-      await AsyncStorage.setItem('accessToken', accessToken);
-      await AsyncStorage.setItem('refreshToken', refreshToken);
-
-      // 🔸 로그인 성공 알림 + 페이지 이동
-      Alert.alert('✅ 로그인 성공', '환영합니다!');
-      router.push('/success'); // 로그인 성공 시 이동할 페이지
-
+      if (response.status === 200) {
+        Alert.alert('✅ 로그인 성공!');
+        router.push('/success');
+      }
     } catch (err) {
-      // 🔸 로그인 실패 시 에러 메시지 출력
-      console.error('로그인 오류:', err);
+      console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
       Alert.alert(
         '❌ 로그인 실패',
         err.response?.data?.message || '서버와의 연결에 실패했습니다.'
@@ -49,20 +35,16 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 🔸 상단 로고 (SVG 이미지 PNG 변환본) */}
+      {/* 상단 로고 */}
       <Image
         source={require('../../assets/images/gr_biugo.png')}
         style={styles.logo}
       />
 
-      {/* 🔸 입력 폼 */}
+      {/* 이메일, 비밀번호 입력 */}
       <View style={styles.form}>
         <Text style={styles.label}>아이디</Text>
-        <InputField
-          placeholder="이메일 또는 아이디"
-          value={email}
-          onChangeText={setEmail}
-        />
+        <InputField placeholder="이메일 또는 아이디" value={email} onChangeText={setEmail} />
 
         <Text style={styles.label}>비밀번호</Text>
         <InputField
@@ -73,16 +55,13 @@ export default function LoginScreen() {
         />
       </View>
 
-      {/* 🔸 로그인 버튼 (지구 이미지 + 텍스트 오버레이) */}
+      {/* 로그인 버튼 */}
       <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Image
-          source={require('../../assets/images/earth.png')}
-          style={styles.earth}
-        />
+        <Image source={require('../../assets/images/earth.png')} style={styles.earth} />
         <Text style={styles.loginText}>로그인</Text>
       </TouchableOpacity>
 
-      {/* 🔸 하단 네비게이션 링크들 */}
+      {/* 하단 링크 */}
       <View style={styles.links}>
         <TouchableOpacity onPress={() => router.push('/signup')}>
           <Text style={styles.linkText}>가입하기</Text>
@@ -98,11 +77,10 @@ export default function LoginScreen() {
   );
 }
 
-// 🔹 스타일 정의
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2', // 🔸 배경색: 연한 회색
+    backgroundColor: '#F2F2F2',
     paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -131,7 +109,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     resizeMode: 'contain',
-    opacity: 0.1, // 🔸 10% 투명도
+    opacity: 0.1,
   },
   loginText: {
     position: 'absolute',
