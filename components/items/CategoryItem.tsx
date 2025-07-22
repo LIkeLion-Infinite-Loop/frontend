@@ -16,7 +16,11 @@ const CategoryItem: React.FC<CategoryItemProps> = ({name, koreanName, icon, onPr
 
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress}>
-      <Image source={icon} style={styles.icon} />
+      <Image
+        source={icon}
+        style={styles.icon}
+        contentFit="contain"
+      />
       <Text style={styles.name}>{koreanName}</Text>
     </TouchableOpacity>
   );

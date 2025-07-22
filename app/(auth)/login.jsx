@@ -9,57 +9,61 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-// <<<<<<< csy
-//   // ✅ 로그인 처리 함수
-//   const handleLogin = async () => {
-//     console.log('입력된 이메일:', email);
-//     console.log('입력된 비밀번호:', password);
+  /*
+  // <<<<<<< csy (상대방이 작성했던 원본 코드)
+  //   // ✅ 로그인 처리 함수
+  //   const handleLogin = async () => {
+  //     console.log('입력된 이메일:', email);
+  //     console.log('입력된 비밀번호:', password);
+  //
+  //     try {
+  //       const response = await axios.post('http://192.168.0.36:3000/login', {
+  //         email,
+  //         password,
+  //       });
+  //
+  //       if (response.status === 200) {
+  //         Alert.alert('✅ 로그인 성공!');
+  //         router.push('/success');
+  //       }
+  //     } catch (err) {
+  //       console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
+  //       Alert.alert(
+  //         '❌ 로그인 실패',
+  //         err.response?.data?.message || '서버와의 연결에 실패했습니다.'
+  //       );
+  //     }
+  //   };
+  */
 
-//     try {
-//       const response = await axios.post('http://192.168.0.36:3000/login', {
-//         email,
-//         password,
-//       });
-
-//       if (response.status === 200) {
-//         Alert.alert('✅ 로그인 성공!');
-//         router.push('/success');
-//       }
-//     } catch (err) {
-//       console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
-//       Alert.alert(
-//         '❌ 로그인 실패',
-//         err.response?.data?.message || '서버와의 연결에 실패했습니다.'
-//       );
-//     }
-//   };
-// =======
-const handleLogin = async () => {
-  try {
-    // 1. 로컬 서버에 로그인 요청
-    const response = await fetch('http://119.206.86.243:3000/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    // 2. 서버로부터 성공 응답을 받으면
-    if (response.ok) {
-      // 3. 홈 화면으로 이동
-      router.replace('/(tabs)'); // ✅ 이 코드를 추가하세요!
-    } else {
-      // 로그인 실패 시
-      alert(data.message);
+  // ✅ 로그인 처리 함수 (충돌 해결 및 수정 완료)
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
+      return;
     }
-  } catch (error) {
-    console.error('로그인 요청 오류:', error);
-    alert('로그인 중 문제가 발생했습니다.');
-  }
-};
+
+    try {
+      // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
+      const response = await axios.post('http://119.206.86.243:3000/login', {
+        email,
+        password,
+      });
+
+      if (response.status === 200) {
+        Alert.alert('✅ 로그인 성공!');
+        // ✅ 로그인 성공 후 이동할 화면 경로를 확인하세요. (예: '/(tabs)')
+        router.push('/(tabs)');
+      }
+    } catch (err) {
+      console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
+      Alert.alert(
+        '❌ 로그인 실패',
+        err.response?.data?.message || '서버와의 연결에 실패했습니다.'
+      );
+    }
+  };
+
 
   return (
     <View style={styles.container}>
