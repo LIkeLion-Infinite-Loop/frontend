@@ -1,46 +1,65 @@
+
+import React, {useState} from 'react';
 import { Image } from 'expo-image';
 import { Text, View, SafeAreaView, StyleSheet, ScrollView } from 'react-native'; // ScrollView 추가
+import { router } from 'expo-router';
 import SearchInput from '@/components/common/SearchInput';
 import CategoryGrid from '@/components/layout/CategoryGrid'; 
-
+import RecyclingInfoModal from '@/components/modals/RecyclingInfoModal'; 
+import { RECYCLING_DATA, CategoryData } from '@/constants/recyclingData'; 
 export default function HomeScreen() {
+
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [selectedCategoryData, setSelectedCategoryData] = useState<CategoryData | null>(null);
+
   const handleSearchSubmit = (query: string) => {
-    console.log('검색어:', query);
-    // 여기에 검색어를 처리하는 로직 추가 가능
-  };
-  const handleCategoryPress = (categoryName: string) => {
-    console.log(`${categoryName} 카테고리 클릭`);
-    // 여기에 카테고리 클릭 시 처리할 로직 추가 가능
+    if (query.trim()) { // 빈 검색어는 무시
+      router.push(`/search?query=${query}`);
+    }
   };
 
+  const handleCategoryPress = (categoryName: string) => {
+
+    console.log(`[디버깅] handleCategoryPress 실행됨! 클릭된 카테고리: ${categoryName}`);
+
+    const data = RECYCLING_DATA[categoryName.toLowerCase()];
+
+    if (data) {
+      setSelectedCategoryData(data);
+      setModalVisible(true);
+    } else {
+      console.log(`[디버깅] '${categoryName}'에 해당하는 데이터가 RECYCLING_DATA에 없습니다.`);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false); // 모달 숨기기
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        {/* ... (기존의 로고, 검색창, 구분선, 카테고리 텍스트) ... */}
         <View style={styles.topDecorationArea}>
-          <Image
-            source={require('../../assets/images/logo.png')} // 로고 이미지 경로
-            style={[styles.logoImage, { resizeMode: 'contain' }]}
-          />
+          <Image source={require('../../assets/images/logo.png')} style={styles.logoImage} 
+          contentFit="contain" />
         </View>
-
-
         <View style={styles.searchArea}>
-          <SearchInput
-            placeholder="재활용품을 검색해주세요!"
-            onSearch={handleSearchSubmit}
-          />
+          <SearchInput placeholder="재활용품을 검색해주세요!" onSearch={handleSearchSubmit} />
         </View>
-
         <View style={styles.dividerLine} />
-
         <View style={styles.textArea}>
           <Text style={styles.categoryText}>카테고리</Text>
         </View>
 
         <CategoryGrid onCategoryPress={handleCategoryPress} />
-
       </ScrollView>
+
+      <RecyclingInfoModal
+        isVisible={isModalVisible}
+        onClose={handleCloseModal}
+        categoryData={selectedCategoryData}
+      />
     </SafeAreaView>
   );
 }

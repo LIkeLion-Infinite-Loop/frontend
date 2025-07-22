@@ -7,65 +7,65 @@ import InputField from '../../components/InputField';
 export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [userId, setUserId] = useState('');
+  // const [userId, setUserId] = useState(''); // 서버에서 사용하지 않으므로 주석 처리
   const [password, setPassword] = useState('');
 
-// <<<<<<< csy
-//   // ✅ 회원가입 처리
-//   const handleSignup = async () => {
-//     try {
-//       const response = await axios.post('http://192.168.0.36:3000/register', {
-//         email,
-//         name,
-//         password,
-//       });
-// =======
-const handleSignUp = async () => {
-  if (!name || !email || !userId || !password) {
-    Alert.alert('입력 오류', '모든 필드를 입력해주세요.');
-    return;
-  }
+  /*
+  // <<<<<<< csy (상대방이 작성했던 원본 코드)
+  //   // ✅ 회원가입 처리
+  //   const handleSignup = async () => {
+  //     try {
+  //       const response = await axios.post('http://192.168.0.36:3000/register', {
+  //         email,
+  //         name,
+  //         password,
+  //       });
+  //
+  //       if (response.status === 201) {
+  //         Alert.alert('✅', '회원가입이 완료되었습니다.');
+  //         router.push('/login');
+  //       }
+  //     } catch (error) {
+  //       if (error.response?.status === 409) {
+  //         Alert.alert('⚠️', '이미 존재하는 이메일입니다.');
+  //       } else {
+  //         console.error(error);
+  //         Alert.alert('❌', '서버 오류가 발생했습니다.');
+  //       }
+  //     }
+  //   };
+  */
 
-  try {
-    // 'YOUR_LOCAL_IP' 부분에 위에서 찾은 IP 주소를 넣으세요.
-    const response = await fetch('http://119.206.86.243:3000/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email,       
-        password: password, 
-        name: name,         
-      }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      Alert.alert('성공', '회원가입이 완료되었습니다.');
-      router.replace('/(tabs)');
-    } else {
-      Alert.alert('오류', data.message);
+  // ✅ 회원가입 처리 함수 (충돌 해결 및 수정 완료)
+  const handleSignUp = async () => {
+    if (!name || !email || !password) {
+      Alert.alert('입력 오류', '이름, 이메일, 비밀번호를 모두 입력해주세요.');
+      return;
     }
-  } catch (error) {
-    console.error('회원가입 요청 오류:', error);
-  }
-};
+
+    try {
+      // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
+      const response = await axios.post('http://119.206.86.243:3000/register', {
+        email,
+        name,
+        password,
+      });
 
       if (response.status === 201) {
-        Alert.alert('✅', '회원가입이 완료되었습니다.');
+        Alert.alert('✅ 회원가입 성공', '로그인 페이지로 이동합니다.');
         router.push('/login');
       }
     } catch (error) {
       if (error.response?.status === 409) {
-        Alert.alert('⚠️', '이미 존재하는 이메일입니다.');
+        Alert.alert('⚠️ 가입 실패', '이미 존재하는 이메일입니다.');
       } else {
-        console.error(error);
-        Alert.alert('❌', '서버 오류가 발생했습니다.');
+        console.error('회원가입 오류:', error);
+        Alert.alert('❌ 서버 오류', '회원가입 중 문제가 발생했습니다.');
       }
     }
   };
+
+
 
   const handleGoHome = () => router.push('/');
 
@@ -78,10 +78,7 @@ const handleSignUp = async () => {
         <InputField value={name} onChangeText={setName} placeholder="이름" />
 
         <Text style={styles.label}>이메일</Text>
-        <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
-
-        <Text style={styles.label}>아이디</Text>
-        <InputField value={userId} onChangeText={setUserId} placeholder="아이디" />
+        <InputField value={email} onChangeText={setEmail} placeholder="이메일" keyboardType="email-address" />
 
         <Text style={styles.label}>비밀번호</Text>
         <InputField
