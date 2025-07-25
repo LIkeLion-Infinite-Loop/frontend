@@ -45,7 +45,7 @@ export default function LoginScreen() {
 
     try {
       // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
-      const response = await axios.post('http://119.206.86.243:3000/login', {
+      const response = await axios.post('http://192.168.0.20:3000/login', {
         email,
         password,
       });
