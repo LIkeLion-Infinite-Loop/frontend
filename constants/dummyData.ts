@@ -1,8 +1,8 @@
 interface Category {
   id: string;
   name: string;
-  icon: any; // require()를 통해 불러올 이미지의 타입
-  koreanName: string; // 한국어 이름 추가 (선택 사항)
+  icon: any; 
+  koreanName: string; 
 }
 
 export const CATEGORIES: Category[] = [

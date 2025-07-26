@@ -76,17 +76,21 @@ export default function LoginScreen() {
       </TouchableOpacity>
 
       {/* 하단 링크 */}
-      <View style={styles.links}>
-        <TouchableOpacity onPress={() => router.push('/signup')}>
+      <View style={styles.linksRow}>
+        <TouchableOpacity onPress={() => router.push('/signup')} style={styles.linkBox}>
           <Text style={styles.linkText}>가입하기</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/findId')}>
+
+        <TouchableOpacity onPress={() => router.push('/findId')} style={styles.linkBox}>
           <Text style={styles.linkText}>아이디 찾기</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/resetPassword')}>
+
+        <TouchableOpacity onPress={() => router.push('/resetPassword')} style={styles.linkBox}>
           <Text style={styles.linkText}>비밀번호 재설정</Text>
         </TouchableOpacity>
       </View>
+
+
     </View>
   );
 }
@@ -131,14 +135,20 @@ const styles = StyleSheet.create({
     fontFamily: 'NotoSansKRRegular',
     color: '#05D16E',
   },
-  links: {
-    marginTop: 32,
-    gap: 12,
+  linksRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+
+  linkBox: {
+    width: 100, // 👈 동일한 너비
+    alignItems: 'center',
+  },
+
   linkText: {
-    textAlign: 'center',
-    fontSize: 20,
-    fontFamily: 'NotoSansKRRegular',
-    color: '#05D16E',
+    fontSize: 13,
+    color: '#9FA6B2', // 예시 색상
   },
+
 });
