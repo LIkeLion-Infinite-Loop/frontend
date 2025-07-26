@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -9,61 +10,42 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  /*
-  // <<<<<<< csy (상대방이 작성했던 원본 코드)
-  //   // ✅ 로그인 처리 함수
-  //   const handleLogin = async () => {
-  //     console.log('입력된 이메일:', email);
-  //     console.log('입력된 비밀번호:', password);
-  //
-  //     try {
-  //       const response = await axios.post('http://192.168.0.36:3000/login', {
-  //         email,
-  //         password,
-  //       });
-  //
-  //       if (response.status === 200) {
-  //         Alert.alert('✅ 로그인 성공!');
-  //         router.push('/success');
-  //       }
-  //     } catch (err) {
-  //       console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
-  //       Alert.alert(
-  //         '❌ 로그인 실패',
-  //         err.response?.data?.message || '서버와의 연결에 실패했습니다.'
-  //       );
-  //     }
-  //   };
-  */
 
-  // ✅ 로그인 처리 함수 (충돌 해결 및 수정 완료)
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
+    if(!email || !password) {
+      Alert.alert('입력 오류', '이메일과 비밀번호 모두 입력해주세요.');
       return;
     }
 
     try {
-      // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
-      const response = await axios.post('http://119.206.86.243:3000/login', {
+      const response = await axios.post('http://40.233.103.122:8080/api/users/login' , {
         email,
         password,
       });
+      console.log('응답 데이터:', response.data);
+      if(response.status === 200 || response.status === 201) {
+        const token = response.data.access_token; // 토큰 추출
 
-      if (response.status === 200) {
-        Alert.alert('✅ 로그인 성공!');
-        // ✅ 로그인 성공 후 이동할 화면 경로를 확인하세요. (예: '/(tabs)')
-        router.push('/(tabs)');
+        if(token) {
+          await AsyncStorage.setItem('userToken', token);
+          await AsyncStorage.setItem('refreshToken', response.data.refresh_token);
+
+          console.log('로그인 성공:', token);
+          Alert.alert('로그인 성공', '환영합니다!');
+          router.push('/(tabs)'); // 홈으로 이동
+        }else {
+          Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
+          console.error('로그인 실패: 토큰이 없습니다.');
+        }
+      } else {
+        Alert.alert('로그인 실패', '예상치 못한 응답 상태 코드입니다.');
+        console.error('로그인 실패:', response.status);
       }
-    } catch (err) {
-      console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
-      Alert.alert(
-        '❌ 로그인 실패',
-        err.response?.data?.message || '서버와의 연결에 실패했습니다.'
-      );
+    } catch (error) {
+      console.error('로그인 오류:', error);
+      Alert.alert('로그인 오류', '서버에 문제가 발생했습니다. 네트워크 상태를 확인하세요.');
     }
   };
-
 
   return (
     <View style={styles.container}>
