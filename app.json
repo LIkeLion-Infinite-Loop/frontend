@@ -21,6 +21,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      
+      "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA"

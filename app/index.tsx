@@ -7,7 +7,6 @@ export default function IntroScreen() {
       <View style={styles.logoGroup}>
         <Image source={require('../assets/images/earth.png')} style={styles.image} />
         
-        {/* ✅ Biugo 로고를 Image 컴포넌트와 require로 수정 */}
         <Image 
           source={require('../assets/images/biugo.png')} 
           style={{ width: 144, height: 48, resizeMode: 'contain' }} 

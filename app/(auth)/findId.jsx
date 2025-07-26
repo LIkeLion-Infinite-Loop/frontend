@@ -12,7 +12,7 @@ export default function FindIdScreen() {
 
   const handleFindId = async () => {
     try {
-      const response = await axios.post('http://192.168.0.36:3000/api/users/find-id', {
+      const response = await axios.post('http://40.233.103.122:8080/api/users/find-id', {
         name,
         email,
       });

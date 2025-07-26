@@ -7,7 +7,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-// 스플래시 스크린 자동 숨김 방지
 SplashScreen.preventAutoHideAsync();
 
 function LoadingScreen() {
@@ -101,4 +100,4 @@ export default function RootLayout() {
       <StatusBar style="auto" />
     </ThemeProvider>
   );
-}
+} 
