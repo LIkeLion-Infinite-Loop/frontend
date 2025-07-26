@@ -7,34 +7,9 @@ import InputField from '../../components/InputField';
 export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  // const [userId, setUserId] = useState(''); // 서버에서 사용하지 않으므로 주석 처리
   const [password, setPassword] = useState('');
 
-  /*
-  // <<<<<<< csy (상대방이 작성했던 원본 코드)
-  //   // ✅ 회원가입 처리
-  //   const handleSignup = async () => {
-  //     try {
-  //       const response = await axios.post('http://192.168.0.36:3000/register', {
-  //         email,
-  //         name,
-  //         password,
-  //       });
-  //
-  //       if (response.status === 201) {
-  //         Alert.alert('✅', '회원가입이 완료되었습니다.');
-  //         router.push('/login');
-  //       }
-  //     } catch (error) {
-  //       if (error.response?.status === 409) {
-  //         Alert.alert('⚠️', '이미 존재하는 이메일입니다.');
-  //       } else {
-  //         console.error(error);
-  //         Alert.alert('❌', '서버 오류가 발생했습니다.');
-  //       }
-  //     }
-  //   };
-  */
+  
 
   // ✅ 회원가입 처리 함수 (충돌 해결 및 수정 완료)
   const handleSignUp = async () => {
@@ -45,15 +20,17 @@ export default function SignupScreen() {
 
     try {
       // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
-      const response = await axios.post('http://119.206.86.243:3000/register', {
+      const response = await axios.post('http://40.233.103.122:8080/api/users/signup', {
         email,
         name,
         password,
       });
 
-      if (response.status === 201) {
+      console.log('서버 응답 받음:', response.status); // ✅ 디버깅용 로그 추가
+
+      if (response.status === 200 || response.status === 201) {
         Alert.alert('✅ 회원가입 성공', '로그인 페이지로 이동합니다.');
-        router.push('/login');
+        router.push('(auth)/login');
       }
     } catch (error) {
       if (error.response?.status === 409) {
