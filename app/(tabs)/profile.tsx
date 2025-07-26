@@ -1,5 +1,5 @@
 // app/(tabs)/help.tsx
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function ProfileScreen() {
   return (
