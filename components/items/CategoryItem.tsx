@@ -1,6 +1,6 @@
-import { Image } from 'expo-image';
+import { Image } from 'react-native'; 
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, Platform } from 'react-native';
 
 interface CategoryItemProps {
     name: string;
@@ -19,7 +19,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({name, koreanName, icon, onPr
       <Image
         source={icon}
         style={styles.icon}
-        contentFit="contain"
+        resizeMode="contain"
       />
       <Text style={styles.name}>{koreanName}</Text>
     </TouchableOpacity>
@@ -32,11 +32,10 @@ const styles = StyleSheet.create({
     aspectRatio: 1, 
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(250, 250, 250, 0.5)', 
-    borderRadius: 10,
+    backgroundColor: Platform.OS === 'ios' ? 'rgba(250, 250, 250, 0.5)' : 'rgba(250, 250, 250, 0.45)',    borderRadius: 10,
     padding: 10,
     margin: 5,
-    shadowColor: '#000', 
+    shadowColor: '#000000', 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -51,7 +50,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: '#333333',
     textAlign: 'center', 
   },
 });
