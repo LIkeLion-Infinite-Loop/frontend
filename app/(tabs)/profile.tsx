@@ -1,6 +1,32 @@
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useEffect, useState} from 'react'
 
 export default function ProfileScreen() {
+  const [userInfo, setUserInfo]= useState({
+    name: '', 
+    email: '',
+  });
+
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem('userInfo');
+        if(storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          setUserInfo({
+            name: parsedUser.name || '',
+            email: parsedUser.email || '',
+          });
+        }
+      }catch(error){
+        console.log('유저 정볼르 불러오지 못했습니다 : ',error);
+      }
+    };
+
+    loadUserInfo();
+  }, []);
+
   return (
     <ScrollView
       style={styles.container}
@@ -22,8 +48,8 @@ export default function ProfileScreen() {
       <View style={styles.profileSection}>
         <Image source={require('../../assets/images/my.png')} style={styles.profileImage} />
         <View>
-          <Text style={styles.name}>김민지</Text>
-          <Text style={styles.email}>burigo@gmail.com</Text>
+          <Text style={styles.name}>{userInfo.name}</Text>
+          <Text style={styles.email}>{userInfo.email}</Text>
         </View>
       </View>
 

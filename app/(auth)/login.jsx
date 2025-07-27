@@ -8,6 +8,7 @@ import InputField from '../../components/InputField';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userInfo, setUserInfo] = useState(null); 
 
 
   const handleLogin = async () => {
@@ -22,15 +23,23 @@ export default function LoginScreen() {
         password,
       });
       console.log('응답 데이터:', response.data);
+
       if(response.status === 200 || response.status === 201) {
         const token = response.data.access_token; 
+        const refreshToken = response.data.refresh_token;
 
-        if(token) {
+        if(token && refreshToken) {
           await AsyncStorage.setItem('userToken', token);
-          await AsyncStorage.setItem('refreshToken', response.data.refresh_token);
+          await AsyncStorage.setItem('refreshToken', refreshToken);
 
-          console.log('로그인 성공:', token);
+          if (response.data.email) {
+            await AsyncStorage.setItem('userEmail', response.data.email);
+          }
+
           Alert.alert('로그인 성공', '환영합니다!');
+
+          await fetchUserInfo(token);
+
           router.push('/(tabs)'); 
         }else {
           Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
@@ -46,6 +55,27 @@ export default function LoginScreen() {
     }
   };
 
+  const fetchUserInfo = async (token) => {
+    try {
+      const response = await axios.get('http://40.233.103.122:8080/api/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 200) {
+        setUserInfo(response.data);
+        // 사용자 정보를 AsyncStorage에 JSON 문자열로 저장
+        await AsyncStorage.setItem('userInfo', JSON.stringify(response.data));
+        console.log('내 정보 조회 성공:', response.data);
+      } else {
+        console.error('내 정보 조회 실패:', response.status);
+      }
+    } catch (error) {
+      console.error('내 정보 조회 오류:', error);
+    }
+  };
+  
   return (
     <View style={styles.container}>
       {/* 상단 로고 */}

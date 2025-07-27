@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { Image } from 'expo-image';
 
 const MOCK_DATA: { [key: string]: any } = {
-  '8808739000207': { 
+  '8801056241506': { 
     productName: '[캔류] 펩시콜라 제로슈거 라임향 335ml',
     image: require('../../assets/images/pepsi-can.png'), 
     steps: [

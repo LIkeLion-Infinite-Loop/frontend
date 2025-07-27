@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -27,6 +28,8 @@ export default function SignupScreen() {
       console.log('서버 응답 받음:', response.status);
 
       if (response.status === 200 || response.status === 201) {
+
+        await AsyncStorage.setItem('user', JSON.stringify({ name, email }));
         Alert.alert('✅ 회원가입 성공', '로그인 페이지로 이동합니다.');
         router.push('(auth)/login');
       }

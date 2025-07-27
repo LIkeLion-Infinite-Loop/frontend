@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, View, Image } from 'react-native'; 
+import { Image, StyleSheet, View } from 'react-native';
 export default function TabLayout() {
 
   return (
@@ -12,15 +12,15 @@ export default function TabLayout() {
 
         tabBarStyle: {
           height: 70, 
-          paddingBottom: 10, // 탭 바 하단 패딩 (아이폰 노치나 제스처 바 대응)
-          backgroundColor: '#f2f2f2', // 탭 바 배경색을 흰색으로 설정
-          borderTopWidth: StyleSheet.hairlineWidth, // 상단에 얇은 구분선
-          borderTopColor: '#e0e0e0', // 구분선 색상
-          shadowColor: '#000', // 그림자 (iOS)
+          paddingBottom: 10, 
+          backgroundColor: '#f2f2f2', 
+          borderTopWidth: StyleSheet.hairlineWidth, 
+          borderTopColor: '#e0e0e0', 
+          shadowColor: '#000', 
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
           shadowRadius: 3,
-          elevation: 5, // 그림자 (Android)
+          elevation: 5, 
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -40,15 +40,13 @@ export default function TabLayout() {
               style={styles.tabIcon} 
             />
           ),
-          // 이 탭의 헤더를 개별적으로 숨길 수도 있습니다. (전역 설정에서 이미 숨겼다면 생략 가능)
-          // headerShown: false,
         }}
       />
 
       <Tabs.Screen
         name="help" 
         options={{
-          title: '도움말', 
+          title: '가이드', 
           tabBarIcon: ({ color, focused }) => (
             <Image
               source={require('../../assets/images/help.png')} 
@@ -95,7 +93,7 @@ export default function TabLayout() {
           title: '내 정보',
           tabBarIcon: ({ color, focused }) => (
             <Image
-              source={require('../../assets/images/my.png')} 
+              source={require('../../assets/images/profile.png')} 
               style={styles.tabIcon}
             />
           ),
