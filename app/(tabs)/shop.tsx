@@ -5,10 +5,9 @@ interface ShopItem {
   id: string;
   name: string;
   price: string;
-  type: 'donation' | 'purchase'; // 'donation' 또는 'purchase'만 가능하도록 리터럴 타입 지정
-  image: ImageSourcePropType; // require()로 불러온 이미지의 타입
+  type: 'donation' | 'purchase'; 
+  image: ImageSourcePropType; 
 }
-// 상품 데이터 배열 (실제 데이터는 API에서 가져올 수 있습니다)
 const shopItems: ShopItem[]  = [
   {
     id: '1',
@@ -37,16 +36,13 @@ const shopItems: ShopItem[]  = [
 ];
 
 export default function ShopScreen() {
-  // 현재 포인트 상태 (예시)
   const [myPoints, setMyPoints] = React.useState(0);
 
-  // 기부하기/구매하기 버튼 핸들러 (실제 로직 구현 필요)
   const handleAction = (item : ShopItem) => {
     if (item.type === 'donation') {
-      alert(`${item.name}에 기부하기`); // 실제 기부 로직
+      alert(`${item.name}에 기부하기`); 
     } else {
-      alert(`${item.name}을(를) ${item.price}에 구매하기`); // 실제 구매 로직
-      // 포인트 차감 로직 등
+      alert(`${item.name}을(를) ${item.price}에 구매하기`); 
     }
   };
 

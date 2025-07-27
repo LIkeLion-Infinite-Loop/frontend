@@ -9,7 +9,6 @@ export default function SetNewPassword() {
 
   const handleReset = () => {
     if (password === confirm && password.length >= 6) {
-      // 비밀번호 재설정 API 연결 예정
       alert('비밀번호가 재설정되었습니다.');
       router.push('/login');
     } else {

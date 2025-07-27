@@ -11,7 +11,6 @@ export default function SignupScreen() {
 
   
 
-  // ✅ 회원가입 처리 함수 (충돌 해결 및 수정 완료)
   const handleSignUp = async () => {
     if (!name || !email || !password) {
       Alert.alert('입력 오류', '이름, 이메일, 비밀번호를 모두 입력해주세요.');
@@ -19,14 +18,13 @@ export default function SignupScreen() {
     }
 
     try {
-      // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
       const response = await axios.post('http://40.233.103.122:8080/api/users/signup', {
         email,
         name,
         password,
       });
 
-      console.log('서버 응답 받음:', response.status); // ✅ 디버깅용 로그 추가
+      console.log('서버 응답 받음:', response.status);
 
       if (response.status === 200 || response.status === 201) {
         Alert.alert('✅ 회원가입 성공', '로그인 페이지로 이동합니다.');

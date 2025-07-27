@@ -1,4 +1,3 @@
-// app/(auth)/findId.jsx
 import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';

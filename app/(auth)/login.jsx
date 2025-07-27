@@ -6,7 +6,6 @@ import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-na
 import InputField from '../../components/InputField';
 
 export default function LoginScreen() {
-  // ✅ 상태 관리
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
