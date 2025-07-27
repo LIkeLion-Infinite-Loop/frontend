@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, FlatList, Pressable } from 'react-native';
-import { Image } from 'expo-image';
 import { CategoryData } from '@/constants/recyclingData'; // 위에서 정의한 타입 임포트
+import { Image } from 'expo-image';
+import React from 'react';
+import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface RecyclingInfoModalProps {
   isVisible: boolean;
@@ -21,9 +21,7 @@ const RecyclingInfoModal: React.FC<RecyclingInfoModalProps> = ({ isVisible, onCl
       visible={isVisible}
       onRequestClose={onClose}
     >
-      {/* 반투명 배경 */}
       <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* 모달 컨텐츠 (배경 클릭 시 닫히지 않도록 Pressable로 감싸지 않음) */}
         <Pressable style={styles.modalContainer}>
           <Text style={styles.title}>[{categoryData.koreanName}] 항목별 재활용법</Text>
 
@@ -40,11 +38,6 @@ const RecyclingInfoModal: React.FC<RecyclingInfoModalProps> = ({ isVisible, onCl
               </View>
             )}
           />
-
-          {/* 닫기 버튼을 원하면 추가할 수 있습니다. */}
-          {/* <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>닫기</Text>
-          </TouchableOpacity> */}
         </Pressable>
       </Pressable>
     </Modal>

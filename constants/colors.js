@@ -1,4 +1,3 @@
-// constants/colors.js
 export const COLORS = {
     primary: '#0066FF',
     border: '#DDDDDD',

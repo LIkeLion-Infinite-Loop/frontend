@@ -8,15 +8,12 @@ export default function IntroScreen() {
     <View style={styles.container}>
       <View style={styles.logoGroup}>
         <Image source={require('../assets/images/earth.png')} style={styles.image} />
-        
-        {/* Biugo 로고 */}
         <Image 
           source={require('../assets/images/biugo.png')} 
           style={{ width: 144, height: 48, resizeMode: 'contain' }} 
         />
       </View>
 
-      {/* ✅ START 버튼을 누르면 로그인 화면으로 이동 */}
       <TouchableOpacity style={styles.button} onPress={() => router.push('/(auth)/login')}>
         <Text style={styles.buttonText}>START</Text>
       </TouchableOpacity>

@@ -24,7 +24,7 @@ export default function LoginScreen() {
       });
       console.log('응답 데이터:', response.data);
       if(response.status === 200 || response.status === 201) {
-        const token = response.data.access_token; // 토큰 추출
+        const token = response.data.access_token; 
 
         if(token) {
           await AsyncStorage.setItem('userToken', token);
@@ -32,7 +32,7 @@ export default function LoginScreen() {
 
           console.log('로그인 성공:', token);
           Alert.alert('로그인 성공', '환영합니다!');
-          router.push('/(tabs)'); // 홈으로 이동
+          router.push('/(tabs)'); 
         }else {
           Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
           console.error('로그인 실패: 토큰이 없습니다.');

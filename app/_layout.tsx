@@ -50,17 +50,14 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepareApp() {
       try {
-        // 1. 폰트 로딩 대기
         if (!fontLoaded && !fontError) {
           // 폰트가 로드되지 않았으면 대기
           return;
         }
 
-        // 2. 스플래시 화면 숨기기 (폰트 로딩 완료 후)
         await SplashScreen.hideAsync();
         console.log('스플래시 화면 숨김');
 
-        // 3. 앱 초기 로딩 완료 상태 설정 (여기서는 폰트 로딩만으로 판단)
         setAppInitialLoadDone(true);
 
       } catch (e) {
@@ -87,11 +84,9 @@ export default function RootLayout() {
     return <LoadingScreen />;
   }
 
-  // ✅ AuthProvider로 앱의 메인 스택을 감싸줍니다.
-  // 이렇게 하면 모든 자식 컴포넌트에서 useAuth 훅을 통해 인증 상태에 접근할 수 있습니다.
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider> {/* ✅ AuthProvider로 감싸기 */}
+      <AuthProvider> 
         <Stack
           screenOptions={{
             headerStyle: {
@@ -104,10 +99,6 @@ export default function RootLayout() {
             headerBackTitle: '', // iOS에서 뒤로가기 버튼 옆 텍스트 제거
           }}
         >
-          {/*
-            ✅ index 화면이 앱의 초기 진입점(인트로 화면)이 됩니다.
-            이 화면에서 사용자가 'START' 버튼을 눌러야 다음 화면으로 이동합니다.
-          */}
           <Stack.Screen name="index" options={{ headerShown: false, title: '' }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false, title: ''}} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />

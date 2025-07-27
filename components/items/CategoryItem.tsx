@@ -1,11 +1,11 @@
+import { Image } from 'expo-image';
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {Image} from 'expo-image';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface CategoryItemProps {
     name: string;
     koreanName: string;
-    icon: any; // require()를 통해 불러올 이미지의 타입
+    icon: any; 
     onPress: (categoryName: string) => void;
 }
 
@@ -28,19 +28,19 @@ const CategoryItem: React.FC<CategoryItemProps> = ({name, koreanName, icon, onPr
 
 const styles = StyleSheet.create({
   container: {
-    width: '31%', // 한 줄에 3개씩 배치되도록 너비 설정 (조정 가능)
-    aspectRatio: 1, // 너비와 높이를 같게 하여 정사각형 형태로 유지
+    width: '31%', 
+    aspectRatio: 1, 
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(250, 250, 250, 0.5)', // <-- 이 줄로 변경! (50% 투명)
+    backgroundColor: 'rgba(250, 250, 250, 0.5)', 
     borderRadius: 10,
     padding: 10,
-    margin: 5, // 아이템 간의 간격
-    shadowColor: '#000', // 그림자 (iOS)
+    margin: 5,
+    shadowColor: '#000', 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 3, // 그림자 (Android)
+    elevation: 3, 
   },
   icon: {
     width: '90%', 
