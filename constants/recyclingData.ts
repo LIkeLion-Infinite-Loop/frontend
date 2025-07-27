@@ -18,12 +18,12 @@ export const RECYCLING_DATA: { [key: string]: CategoryData } = {
       {
         name: '캔(음료수, 통조림)',
         icon: require('../assets/images/can.png'), 
-        description: '- 내용물 비우고 헹구기, 압축시켜 버리기',
+        description: '- 내용물을 깨끗이 비우고 물로 헹군 후, 가급적 납작하게 눌러서 금속 수거함에 배출합니다.\n- 내용물이 남아있는 캔은 재활용이 어려우니 반드시 비워주세요.',
       },
       {
         name: '부탄가스, 살충제 용기',
         icon: require('../assets/images/gas.png'),
-        description: '- 구멍을 뚫어 가스를 완전히 비운 뒤 배출',
+        description:'- 내용물을 완전히 비운 후, 가급적 구멍을 뚫어 가스를 완전히 제거하고 금속 수거함에 배출합니다.\n- 폭발 위험이 있으므로 내용물을 완전히 비우는 것이 중요합니다.',
       },
       {
         name: '고철, 비철금속',
@@ -37,9 +37,19 @@ export const RECYCLING_DATA: { [key: string]: CategoryData } = {
     koreanName: '플라스틱',
     items: [
       {
-        name: '페트병, 플라스틱 용기',
-        icon: require('../assets/images/plastic.png'), 
-        description: '- 내용물 비우고 라벨 제거 후 압축하여 뚜껑 닫아 배출',
+        name: '투명 플라스틱 (PET병 등)',
+        icon: require('../assets/images/plastic.png'),
+        description: '- 내용물을 깨끗이 비우고 물로 헹군 다음, 라벨을 제거하고 납작하게 눌러서 버려주세요.\n- 플라스틱 수거함에 배출합니다.\n- PET, HDPE 재질만 재활용이 가능하며, 다른 재질의 투명 플라스틱은 일반 쓰레기로 버려야 할 수 있습니다.',
+      },
+      {
+        name: '플라스틱 용기 (샴푸통, 세제통 등)',
+        icon: require('../assets/images/sampoo.png'),
+        description: '- 내용물을 깨끗이 비우고 물로 헹군 후, 납작하게 눌러서 플라스틱 수거함에 배출합니다.\n- 이물질이 묻어있거나 오염이 심한 플라스틱 용기는 일반 쓰레기로 버려야 합니다.',
+      },
+      {
+        name: '스티로폼 (포장재 등)',
+        icon: require('../assets/images/styrofoam.png'),
+        description: '- 테이프 등 이물질을 완전히 제거하고 건조시킨 후, 부서지지 않게 플라스틱 수거함에 배출합니다.\n- 음식물 등이 묻어 오염된 스티로폼은 일반 쓰레기로 버려야 합니다.',
       },
     ],
   },
@@ -66,11 +76,11 @@ export const RECYCLING_DATA: { [key: string]: CategoryData } = {
       {
         name: '과자/라면 봉지, 비닐봉투',
         icon: require('../assets/images/vinyl.png'), 
-        description: '- 내용물 비우고 이물질 제거, 흩날리지 않게 봉투에 담아 배출',
+        description: '- 내용물을 깨끗이 비우고 이물질이 없는 깨끗한 비닐만 배출합니다. 여러 장을 한데 모아 투명 비닐봉투에 넣어 플라스틱 수거함에 배출합니다.\n- 음식물, 이물질 등으로 오염된 비닐은 일반 쓰레기로 버려야 합니다.',
       },
       {
         name: '뽁뽁이 (에어캡)',
-        icon: require('../assets/images/vinyl.png'),
+        icon: require('../assets/images/aircap.png'),
         description: '- 테이프나 운송장 스티커를 완전히 제거한 후 배출',
       },
     ],
@@ -82,7 +92,12 @@ export const RECYCLING_DATA: { [key: string]: CategoryData } = {
       {
         name: '의류, 신발, 가방, 커튼',
         icon: require('../assets/images/clothes.png'), 
-        description: '- 헌옷수거함에 배출. 솜이불, 베개, 방석 등은 종량제 봉투 사용',
+        description: '- 오염되거나 훼손되지 않은 깨끗한 옷만 의류 수거함에 배출합니다.\n- 재활용이 어려운 오염되거나 찢어진 옷은 일반 쓰레기로 버려야 합니다.',
+      },
+            {
+        name: '침구류 (이불)',
+        icon: require('../assets/images/blanket.png'),
+        description: '- 깨끗한 상태의 이불만 의류 수거함에 배출합니다. 부피가 크므로 접어서 넣어주세요.\n- 물에 젖거나 오염이 심한 이불은 일반 쓰레기로 버려야 합니다.',
       },
     ],
   },
@@ -91,25 +106,30 @@ export const RECYCLING_DATA: { [key: string]: CategoryData } = {
     koreanName: '종이',
     items: [
       {
-        name: '신문, 책, 종이 상자',
-        icon: require('../assets/images/paper.png'),
-        description: '- 물에 젖지 않게, 비닐 코팅/테이프/스프링 등 제거 후 배출',
+        name: '일반 종이 (신문, 책, 상자 등)',
+        icon: require('../assets/images/news.png'),
+        description: '- 물기에 젖지 않게 하고, 테이프나 철심 등 이물질을 제거한 후 잘 묶거나 종이류 수거함에 배출합니다.\n- 음식물 등으로 오염된 종이나 코팅된 종이(영수증, 사진 등)는 일반 쓰레기로 버려야 합니다.',
       },
       {
-        name: '종이컵, 우유팩 (살균팩)',
-        icon: require('../assets/images/paper.png'),
-        description: '- 내용물 비우고 헹군 뒤, 펼쳐서 말린 후 일반 폐지와 분리 배출',
+        name: '우유팩/종이팩',
+        icon: require('../assets/images/milk.png'),
+        description: '- 내용물을 깨끗이 비우고 물로 헹군 후 펼쳐서 건조시킨 다음, 별도의 종이팩 수거함 또는 종이류 수거함에 배출합니다.\n- 반드시 이물질이 없어야 하며, 일반 종이와 섞이지 않게 분리 배출합니다.',
       },
     ],
   },
 
   appliances: {
-    koreanName: '소형가전',
+    koreanName: '가전제품',
     items: [
       {
-        name: '1m 미만 가전제품',
-        icon: require('../assets/images/elec.png'), 
-        description: "- 5개 이상: '폐가전 무상방문수거' 서비스 이용 (1599-0903)\n- 5개 미만: 주민센터, 아파트 내 전용 수거함 이용",
+        name: '충전기, 소형 전자제품',
+        icon: require('../assets/images/charger.png'),
+        description: '- 주민센터, 아파트 단지 내 비치된 소형가전 전용 수거함에 배출합니다.\n- 일반 쓰레기로 버리면 안 됩니다.',
+      },
+      {
+        name: '노트북, 대형가전 등',
+        icon: require('../assets/images/notebook.png'),
+        description: '- 5개 미만의 소량은 주민센터나 아파트 수거함 등을 이용하고, 그 이상 또는 대형 가전은 폐가전 무상 방문수거 서비스(한국전자제품자원순환공제조합 1599-0903 또는 온라인 예약)를 이용합니다.',
       },
     ],
   },
@@ -119,13 +139,13 @@ export const RECYCLING_DATA: { [key: string]: CategoryData } = {
     items: [
       {
         name: '과일 껍질, 남은 음식물',
-        icon: require('../assets/images/food.png'), 
-        description: '- 물기 최대한 제거, 전용 수거용기나 종량제 봉투에 배출',
+        icon: require('../assets/images/food.png'),
+        description: '- 물기를 최대한 제거한 후, 음식물 쓰레기 전용 수거 용기나 음식물 쓰레기 전용 종량제 봉투에 담아 배출합니다.',
       },
       {
-        name: '일반 쓰레기로 버려야 할 것',
-        icon: require('../assets/images/food.png'), 
-        description: '- 조개/견과류 껍데기, 닭/돼지 뼈, 채소 뿌리/대 등은 일반 쓰레기',
+        name: '일반 쓰레기로 버려야 할 음식물 관련 쓰레기',
+        icon: require('../assets/images/food.png'),
+        description: '- 조개/견과류 껍데기, 달걀 껍데기, 육류/어류 뼈, 복숭아씨/감씨 등 단단한 씨앗, 채소의 뿌리/대(파뿌리, 옥수수대 등), 일회용 티백, 커피 찌꺼기 등은 일반 쓰레기로 버려야 합니다.',
       },
     ],
   },
@@ -136,12 +156,17 @@ export const RECYCLING_DATA: { [key: string]: CategoryData } = {
       {
         name: '폐건전지, 형광등',
         icon: require('../assets/images/battery.png'), 
-        description: '- 전용 수거함에 배출 (주민센터, 아파트 등). 깨지지 않게 주의',
+        description: '- 유해 폐기물이므로 일반 쓰레기와 섞이지 않게 주민센터, 아파트, 마트 등에 비치된 전용 수거함에 반드시 분리 배출합니다.',
       },
       {
         name: '폐의약품',
         icon: require('../assets/images/battery.png'), 
         description: '- 약국, 보건소의 폐의약품 수거함에 배출. 절대 변기나 하수구에 버리지 않기',
+      },
+      {
+        name: '칼, 깨진 유리 등 날카로운 물건',
+        icon: require('../assets/images/battery.png'),
+        description: '- 신문지 등으로 여러 겹 감싸거나 박스에 넣어 다치지 않게 주의하여 종량제 봉투에 버립니다.\n- 날카로운 부분이 외부로 노출되지 않도록 철저히 포장해야 합니다.',
       },
     ],
   },
