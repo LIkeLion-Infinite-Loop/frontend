@@ -3,19 +3,28 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FindIdScreen() {
+  const { userToken } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [foundId, setFoundId] = useState('');
 
   const handleFindId = async () => {
-    try {
-      const response = await axios.post('http://40.233.103.122:8080/api/users/find-id', {
-        name,
-        email,
-      });
+    try {   
+      if (!name || !email) {
+        return Alert.alert('⚠️', '이름과 이메일을 모두 입력해주세요.');
+      }
 
+      const response = await axios.post('http://40.233.103.122:8080/api/users/find-id',
+      { name, email },
+      {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      }
+    );
       if (response.data?.user_id) {
         setFoundId(response.data.user_id);
       } else {
@@ -41,9 +50,10 @@ export default function FindIdScreen() {
         <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
       </View>
 
-      <TouchableOpacity onPress={handleFindId}>
-        <Text style={styles.findButton}>아이디 찾기</Text>
+      <TouchableOpacity onPress={handleFindId} style={styles.findButton}>
+        <Text style={styles.findButtonText}>아이디 찾기</Text>
       </TouchableOpacity>
+
 
       {foundId !== '' && (
         <View style={styles.resultBox}>
@@ -85,12 +95,17 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   findButton: {
-    fontSize: 20,
-    fontFamily: 'NotoSansKRRegular',
-    textAlign: 'center',
-    color: '#05D16E',
+    backgroundColor: '#05D16E',
+    paddingVertical: 12,
+    borderRadius: 8,
     marginTop: 24,
     marginBottom: 16,
+  },
+  findButtonText: {
+    fontSize: 20,
+    color: '#fff',
+    textAlign: 'center',
+    fontFamily: 'NotoSansKRRegular',
   },
   resultBox: {
     backgroundColor: '#fff',

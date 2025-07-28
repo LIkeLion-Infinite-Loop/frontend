@@ -1,16 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router'; // 로그아웃 시 리다이렉션을 위해 필요할 수 있습니다.
+import { router } from 'expo-router';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-// 1. AuthContext 생성
 const AuthContext = createContext(null);
 
-// 2. AuthProvider 컴포넌트 정의
 export function AuthProvider({ children }) {
   const [userToken, setUserToken] = useState(null); // 사용자 토큰 상태
   const [isLoading, setIsLoading] = useState(true); // 초기 토큰 로딩 중인지 여부
 
-  // 앱 시작 시 AsyncStorage에서 토큰 로드
   useEffect(() => {
     const loadToken = async () => {
       try {
@@ -27,18 +24,17 @@ export function AuthProvider({ children }) {
     loadToken();
   }, []); // 컴포넌트 마운트 시 한 번만 실행
 
-  // 로그인 함수: 토큰을 받아 AsyncStorage에 저장하고 상태 업데이트
+  // 로그인 함수
   const signIn = async (token) => {
     try {
       await AsyncStorage.setItem('userToken', token);
       setUserToken(token);
-      // 로그인 성공 후 특정 화면으로 이동하는 로직은 로그인 컴포넌트에서 처리
     } catch (e) {
       console.error('AsyncStorage에 토큰 저장 실패:', e);
     }
   };
 
-  // 로그아웃 함수: AsyncStorage에서 토큰 삭제하고 상태 업데이트
+  // 로그아웃 함수
   const signOut = async () => {
     try {
       await AsyncStorage.removeItem('userToken');
@@ -50,7 +46,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Context Provider를 통해 자식 컴포넌트에 userToken, isLoading, signIn, signOut 제공
   return (
     <AuthContext.Provider value={{ userToken, isLoading, signIn, signOut }}>
       {children}
@@ -58,7 +53,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// 3. useAuth 훅 정의: 다른 컴포넌트에서 AuthContext를 쉽게 사용할 수 있도록 함
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
