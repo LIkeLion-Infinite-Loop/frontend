@@ -9,11 +9,9 @@ export default function ResetPasswordScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
-  // ✅ 비밀번호 재설정 요청
   const handleReset = async () => {
     try {
-      // 실제 서버는 user_id 없이 이름, 이메일만 받도록 수정돼 있어야 함
-      const response = await axios.post('http://192.168.0.36:3000/api/auth/reset-password', {
+      const response = await axios.post('http://40.233.103.122:8080/api/auth/reset-password', {
         name,
         email,
       });

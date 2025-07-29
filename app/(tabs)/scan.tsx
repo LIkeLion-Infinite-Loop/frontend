@@ -20,13 +20,11 @@ export default function ScanScreen() {
     isProcessing.current = true;
     console.log(`스캔된 바코드: ${barcode}`);
 
-    // ✅ TypeScript 오류를 해결하기 위해 router.push에 객체를 전달합니다.
     router.push({
-      pathname: '/scan-result/[barcode]', // 정적인 경로 패턴
-      params: { barcode: barcode },      // 동적인 파라미터
+      pathname: '/scan-result/[barcode]', 
+      params: { barcode: barcode },     
     });
 
-    // 3초 후에 다시 스캔이 가능하도록 설정
     setTimeout(() => {
       isProcessing.current = false;
     }, 3000);
