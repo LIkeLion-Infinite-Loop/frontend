@@ -3,7 +3,6 @@ import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native
 import { router } from 'expo-router';
 
 export default function IntroScreen() {
-
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [isHovered, setIsHovered] = useState(false);
 
@@ -23,7 +22,7 @@ export default function IntroScreen() {
       router.push('/(auth)/login');
     });
   };
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.logoGroup}>
@@ -37,31 +36,33 @@ export default function IntroScreen() {
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        onHoverIn={() => setIsHovered(true)}   // hover 시작
-        onHoverOut={() => setIsHovered(false)} // hover 끝
-        style={({ pressed }) => [
-          styles.button,
-          {
-            transform: [{ scale: scaleAnim }],
-            backgroundColor: isHovered ? '#04c75a' : '#FFFFFF',
-            cursor: 'pointer',
-            userSelect: 'none',
-            opacity: pressed ? 0.8 : 1, // 눌렀을 때 투명도 변화
-          },
-        ]}
+        onHoverIn={() => setIsHovered(true)}
+        onHoverOut={() => setIsHovered(false)}
       >
-        <Animated.Text
+        <Animated.View
           style={[
-            styles.buttonText,
-            { color: isHovered ? '#e0ffe8' : '#05D16E' },
+            styles.button,
+            {
+              transform: [{ scale: scaleAnim }],
+              backgroundColor: isHovered ? '#04c75a' : '#FFFFFF',
+              opacity: isHovered ? 0.95 : 1,
+            },
           ]}
         >
-          START
-        </Animated.Text>
+          <Text
+            style={[
+              styles.buttonText,
+              { color: isHovered ? '#e0ffe8' : '#05D16E' },
+            ]}
+          >
+            START
+          </Text>
+        </Animated.View>
       </Pressable>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -82,14 +83,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: '#FFFFFF',
     paddingVertical: 16,
     paddingHorizontal: 60,
     borderRadius: 10,
     marginTop: 32,
   },
   buttonText: {
-    color: '#05D16E',
     fontSize: 18,
     fontWeight: 'bold',
   },

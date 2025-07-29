@@ -10,11 +10,11 @@ export default function ScanScreen() {
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
+      (setHasPermission as React.Dispatch<React.SetStateAction<boolean | null>>)(status === 'granted'); 
     })();
   }, []); 
 
-
+  // 바코드 변수에 string 타입을 명시적으로 지정
   const handleBarCodeScanned = ({ data: barcode }: { data: string }) => {
     if (isProcessing.current) return;
     isProcessing.current = true;
@@ -52,10 +52,15 @@ export default function ScanScreen() {
         onBarcodeScanned={handleBarCodeScanned}
         style={StyleSheet.absoluteFillObject}
       >
-        <View style={styles.overlay}>
-          <Text style={styles.scanInstructionText}>바코드나 QR 코드를 사각형 안에 비춰주세요</Text>
-          <View style={styles.scanBox} />
+        <View style={styles.overlayTop} />
+        <View style={styles.overlayMiddle}>
+          <View style={styles.overlaySide} />
+          <View style={styles.scanBox}>
+            <Text style={styles.scanInstructionText}>바코드나 QR 코드를 사각형 안에 비춰주세요</Text>
+          </View>
+          <View style={styles.overlaySide} />
         </View>
+        <View style={styles.overlayBottom} />
       </CameraView>
     </View>
   );
@@ -68,17 +73,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#000',
   },
-  overlay: {
+  overlayBackground: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  overlayTop: {
+    flex: 1,
+    width: '100%',
+    ...StyleSheet.absoluteFillObject,
+    bottom: 'auto',
+    height: 'auto',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  overlayMiddle: {
+    flexDirection: 'row',
+    width: '100%',
+    height: 250,
+  },
+  overlaySide: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
+  },
+  overlayBottom: {
+    flex: 1,
+    width: '100%',
+    ...StyleSheet.absoluteFillObject,
+    top: 'auto',
+    height: 'auto',
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   scanInstructionText: {
     color: '#fff',
     fontSize: 18,
-    marginBottom: 20,
     textAlign: 'center',
+    position: 'absolute',
+    top: -40,
+    width: '100%',
   },
   scanBox: {
     width: 250,
@@ -86,6 +121,7 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
     borderWidth: 2,
     borderRadius: 10,
+    backgroundColor: 'transparent',
   },
   text: {
     color: '#fff',

@@ -36,22 +36,20 @@ export default function FindIdScreen() {
     }
   };
 
-  const handleGoHome = () => router.push('/');
+  const handleGoHome = () => router.push('/login');
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>아이디 찾기</Text>
 
       <View style={styles.form}>
-        <Text style={styles.label}>이름</Text>
         <InputField value={name} onChangeText={setName} placeholder="이름" />
 
-        <Text style={styles.label}>이메일</Text>
         <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
       </View>
 
       <TouchableOpacity onPress={handleFindId} style={styles.findButton}>
-        <Text style={styles.findButtonText}>아이디 찾기</Text>
+        <Text style={styles.findButtonText}>확인</Text>
       </TouchableOpacity>
 
 
@@ -97,9 +95,11 @@ const styles = StyleSheet.create({
   findButton: {
     backgroundColor: '#05D16E',
     paddingVertical: 12,
-    borderRadius: 8,
     marginTop: 24,
-    marginBottom: 16,
+    marginBottom: 30,
+    borderRadius: 10, 
+    width: '50%', 
+    alignSelf: 'center'
   },
   findButtonText: {
     fontSize: 20,
@@ -120,6 +120,9 @@ const styles = StyleSheet.create({
     fontFamily: 'NotoSansKRRegular',
   },
   homeButton: {
+    position: 'absolute',    
+    bottom: 80,                
+    alignSelf: 'center',        
     alignItems: 'center',
   },
   homeLogo: {

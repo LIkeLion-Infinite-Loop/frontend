@@ -1,4 +1,3 @@
-// app/resetPassword.jsx
 import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -6,46 +5,38 @@ import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-na
 import InputField from '../../components/InputField';
 
 export default function ResetPasswordScreen() {
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
   const handleReset = async () => {
+    if (!email) {
+      return Alert.alert('⚠️', '이메일을 입력해주세요.');
+    }
+
     try {
-      const response = await axios.post('http://40.233.103.122:8080/api/auth/reset-password', {
-        name,
+      const response = await axios.post('http://40.233.103.122:8080/api/users/reset-password', {
         email,
       });
 
-      if (response.data?.message?.includes('인증코드')) {
-        Alert.alert('✅', '인증코드 전송 완료');
-        router.push('/setNewPassword'); // 비밀번호 재설정 화면 이동
-      } else {
-        Alert.alert('❌', '일치하는 사용자를 찾을 수 없습니다.');
-      }
+      Alert.alert('✅', response.data?.message || '임시 비밀번호가 이메일로 전송되었습니다.');
+      router.push('/login'); 
     } catch (err) {
-      console.error('재설정 요청 오류:', err);
-      Alert.alert('⚠️', '서버 오류가 발생했습니다.');
+      console.error('비밀번호 재설정 오류:', err);
+      Alert.alert('❌', err.response?.data?.message || '서버 오류가 발생했습니다.');
     }
   };
 
-  const handleGoHome = () => router.push('/');
+  const handleGoHome = () => router.push('/login');
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>비밀번호 재설정</Text>
 
       <View style={styles.form}>
-        <Text style={styles.label}>이름</Text>
-        <InputField value={name} onChangeText={setName} placeholder="이름" />
-
-        <Text style={styles.label}>이메일</Text>
-        <InputField value={email} onChangeText={setEmail} placeholder="이메일" />
+        <InputField value={email} onChangeText={setEmail} placeholder="이메일 주소" />
       </View>
-
-      <TouchableOpacity onPress={handleReset}>
-        <Text style={styles.resetButton}>확인</Text>
+      <TouchableOpacity onPress={handleReset} style={styles.resetButton}>
+        <Text style={styles.resetButtonText}>확인</Text>
       </TouchableOpacity>
-
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
         <Image
           source={require('../../assets/images/home_logo.png')}
@@ -80,14 +71,24 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   resetButton: {
-    fontSize: 20,
-    fontFamily: 'NotoSansKRRegular',
-    textAlign: 'center',
-    color: '#05D16E',
+    backgroundColor: '#05D16E',
+    paddingVertical: 12,
     marginTop: 24,
-    marginBottom: 16,
+    marginBottom: 30,
+    borderRadius: 10, 
+    width: '50%', 
+    alignSelf: 'center'
+  },
+  resetButtonText: {
+    fontSize: 20,
+    color: '#fff',
+    textAlign: 'center',
+    fontFamily: 'NotoSansKRRegular',
   },
   homeButton: {
+    position: 'absolute',    
+    bottom: 80,                
+    alignSelf: 'center',        
     alignItems: 'center',
   },
   homeLogo: {

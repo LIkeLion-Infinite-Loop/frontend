@@ -15,7 +15,7 @@ export default function SignupScreen() {
   const handleSignUp = async () => {
     if (!name || !email || !password) {
       Alert.alert('입력 오류', '이름, 이메일, 비밀번호를 모두 입력해주세요.');
-      return;
+      return('/login');
     }
 
     try {
@@ -45,20 +45,20 @@ export default function SignupScreen() {
 
 
 
-  const handleGoHome = () => router.push('/');
+  const handleGoHome = () => router.push('/login');
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>회원 가입</Text>
 
       <View style={styles.form}>
-        <Text style={styles.label}>이름</Text>
+        {/* <Text style={styles.label}>이름</Text> */}
         <InputField value={name} onChangeText={setName} placeholder="이름" />
 
-        <Text style={styles.label}>이메일</Text>
+        {/* <Text style={styles.label}>이메일</Text> */}
         <InputField value={email} onChangeText={setEmail} placeholder="이메일" keyboardType="email-address" />
 
-        <Text style={styles.label}>비밀번호</Text>
+        {/* <Text style={styles.label}>비밀번호</Text> */}
         <InputField
           value={password}
           onChangeText={setPassword}
@@ -67,10 +67,9 @@ export default function SignupScreen() {
         />
       </View>
 
-      <TouchableOpacity onPress={handleSignUp}>
-        <Text style={styles.signupButton}>가입하기</Text>
+      <TouchableOpacity onPress={handleSignUp} style={styles.signupButton}>
+        <Text style={styles.signupButtonText}>확인</Text>
       </TouchableOpacity>
-
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
         <Image
           source={require('../../assets/images/home_logo.png')}
@@ -105,14 +104,24 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   signupButton: {
-    fontSize: 20,
-    fontFamily: 'NotoSansKRRegular',
-    textAlign: 'center',
-    color: '#05D16E',
+    backgroundColor: '#05D16E',
+    paddingVertical: 12,
     marginTop: 24,
-    marginBottom: 16,
+    marginBottom: 30,
+    borderRadius: 10, 
+    width: '50%', 
+    alignSelf: 'center'
+  },
+  signupButtonText: {
+    fontSize: 20,
+    color: '#fff',
+    textAlign: 'center',
+    fontFamily: 'NotoSansKRRegular',
   },
   homeButton: {
+    position: 'absolute',    
+    bottom: 80,                
+    alignSelf: 'center',        
     alignItems: 'center',
   },
   homeLogo: {
