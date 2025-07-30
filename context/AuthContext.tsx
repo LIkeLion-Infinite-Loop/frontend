@@ -2,11 +2,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const AuthContext = createContext(null);
+// ✅ AuthContext의 타입을 정의합니다.
+interface AuthContextType {
+  userToken: string | null;
+  isLoading: boolean;
+  signIn: (token: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
 
-export function AuthProvider({ children }) {
-  const [userToken, setUserToken] = useState(null); // 사용자 토큰 상태
-  const [isLoading, setIsLoading] = useState(true); // 초기 토큰 로딩 중인지 여부
+// ✅ AuthContext를 초기화할 때, null 대신 기본 값을 제공합니다.
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [userToken, setUserToken] = useState<string | null>(null); // 사용자 토큰 상태
+  const [isLoading, setIsLoading] = useState<boolean>(true); // 초기 토큰 로딩 중인지 여부
 
   useEffect(() => {
     const loadToken = async () => {
@@ -25,7 +34,7 @@ export function AuthProvider({ children }) {
   }, []); // 컴포넌트 마운트 시 한 번만 실행
 
   // 로그인 함수
-  const signIn = async (token) => {
+  const signIn = async (token: string) => {
     try {
       await AsyncStorage.setItem('userToken', token);
       setUserToken(token);
@@ -55,7 +64,7 @@ export function AuthProvider({ children }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (context === null) { // ✅ 여기를 context === null 로 변경합니다.
     throw new Error('useAuth는 AuthProvider 내부에서 사용되어야 합니다.');
   }
   return context;

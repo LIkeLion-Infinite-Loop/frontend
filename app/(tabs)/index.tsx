@@ -7,6 +7,7 @@ import SearchInput from '@/components/common/SearchInput';
 import CategoryGrid from '@/components/layout/CategoryGrid'; 
 import RecyclingInfoModal from '@/components/modals/RecyclingInfoModal'; 
 import { RECYCLING_DATA, CategoryData } from '@/constants/recyclingData'; 
+
 export default function HomeScreen() {
 
   const [isModalVisible, setModalVisible] = useState(false);
