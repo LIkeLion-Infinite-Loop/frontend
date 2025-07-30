@@ -1,33 +1,43 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-
-// 1단계에서 정의한 타입 파일을 임포트합니다.
-// 파일 경로가 다를 수 있으니 실제 프로젝트 경로에 맞게 수정하세요.
-import type { AppNavigationProp } from '../../types/navigation.d'; // 또는 '../types/navigation.d' 등
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { AppNavigationProp } from '../../types/navigation.d';
 
 export default function ProfileScreen() {
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
 
-  // ✅ useNavigation 훅에 명시적으로 타입을 지정합니다.
   const navigation = useNavigation<AppNavigationProp>();
 
+  // ✅ 로그아웃 함수
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('userToken');
+      await AsyncStorage.removeItem('refreshToken');
+      await AsyncStorage.removeItem('userInfo');
+      Alert.alert('로그아웃 되었습니다.');
+      router.replace('/login'); // 뒤로가기 방지
+    } catch (error) {
+      console.error('로그아웃 오류:', error);
+      Alert.alert('⚠️ 로그아웃 실패', '잠시 후 다시 시도해주세요.');
+    }
+  };
 
   useEffect(() => {
     const loadUserInfo = async () => {
       try {
         const storedUser = await AsyncStorage.getItem('userInfo');
-        if(storedUser) {
+        if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
           setUserInfo({
             name: parsedUser.name || '',
             email: parsedUser.email || '',
           });
         }
-      }catch(error){
-        console.log('유저 정볼르 불러오지 못했습니다 : ',error);
+      } catch (error) {
+        console.log('유저 정보를 불러오지 못했습니다:', error);
       }
     };
 
@@ -43,14 +53,16 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>마이페이지</Text>
         <View style={styles.icons}>
-          <TouchableOpacity>
-            <Image source={require('../../assets/images/Ask Question.png')} style={styles.icon} />
+          {/* ✅ 로그아웃 버튼 */}
+          <TouchableOpacity onPress={handleLogout}>
+            <Image source={require('../../assets/images/logout.png')} style={styles.icon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setIsPopupVisible(!isPopupVisible)}>
             <Image source={require('../../assets/images/set.png')} style={styles.icon} />
           </TouchableOpacity>
         </View>
       </View>
+
       {isPopupVisible && (
         <TouchableOpacity
           activeOpacity={1}
@@ -62,7 +74,6 @@ export default function ProfileScreen() {
               style={styles.popupItem}
               onPress={() => {
                 setIsPopupVisible(false);
-                // ✅ 호출 방식을 변경합니다: 그룹 이름과 함께 'screen' 파라미터 사용
                 navigation.navigate('(auth)', { screen: 'changePassword' });
               }}
             >
@@ -123,12 +134,9 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   contentContainer: {
-    paddingTop: 60, // ✅ 상단 여백 추가
+    paddingTop: 60,
     paddingHorizontal: 24,
     paddingBottom: 40,
   },
@@ -138,38 +146,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  icons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  icon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
-  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold' },
+  icons: { flexDirection: 'row', gap: 12 },
+  icon: { width: 24, height: 24, resizeMode: 'contain' },
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 32,
     gap: 16,
   },
-  profileImage: {
-    width: 48,
-    height: 48,
-    resizeMode: 'contain',
-  },
-  name: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  email: {
-    fontSize: 14,
-    color: '#555',
-  },
+  profileImage: { width: 48, height: 48, resizeMode: 'contain' },
+  name: { fontWeight: 'bold', fontSize: 16 },
+  email: { fontSize: 14, color: '#555' },
   pointBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -178,88 +166,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
   },
-  pointText: {
-    color: '#05D16E',
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginRight: 8,
-  },
-  pointValue: {
-    fontSize: 16,
-  },
-  section: {
-    marginTop: 24,
-  },
-  sectionTitle: {
-    color: '#999',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  sectionContent: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  divider: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    marginTop: 24,
-  },
-  helpItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  helpIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 8,
-    resizeMode: 'contain',
-  },
-  helpText: {
-    fontSize: 14,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    width: '80%',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  input: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 12,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  modalButton: {
-    flex: 1,
-    padding: 10,
-    alignItems: 'center',
-    borderRadius: 6,
-    backgroundColor: '#eee',
-    marginHorizontal: 4,
-  },
+  pointText: { color: '#05D16E', fontWeight: 'bold', fontSize: 16, marginRight: 8 },
+  pointValue: { fontSize: 16 },
+  section: { marginTop: 24 },
+  sectionTitle: { color: '#999', fontSize: 14, marginBottom: 4 },
+  sectionContent: { fontSize: 14, marginBottom: 4 },
+  divider: { borderTopWidth: 1, borderTopColor: '#eee', marginTop: 24 },
+  helpItem: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+  helpIcon: { width: 20, height: 20, marginRight: 8, resizeMode: 'contain' },
+  helpText: { fontSize: 14 },
   popupOverlay: {
     position: 'absolute',
-    top: 60, // 아이콘 위치에 따라 조정
+    top: 60,
     right: 24,
     zIndex: 999,
   },
@@ -274,12 +192,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  popupItem: {
-    paddingVertical: 6,
-  },
-  popupText: {
-    fontSize: 14,
-    color: '#333',
-  },
-
+  popupItem: { paddingVertical: 6 },
+  popupText: { fontSize: 14, color: '#333' },
 });
