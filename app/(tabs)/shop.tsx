@@ -85,7 +85,7 @@ export default function ShopScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#ffffffff',
   },
   scrollViewContent: {
     flex: 1,
@@ -124,14 +124,14 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-   // borderRadius: 10,
+    backgroundColor: '#fdfdfdff',
+    borderRadius: 10,
     padding: 10,
     marginBottom: 15,
-   // shadowColor: '#000',
-   // shadowOffset: { width: 0, height: 1 },
-   // shadowOpacity: 0.1,
-   // shadowRadius: 3,
+   shadowColor: '#000',
+   shadowOffset: { width: 0, height: 1 },
+   shadowOpacity: 0.1,
+   shadowRadius: 3,
     elevation: 2,
   },
   itemImage: {
@@ -155,10 +155,12 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   actionButton: {
-    backgroundColor: '#f2f2f2', 
+    backgroundColor: '#ffffffff', 
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderRadius: 20,
+    borderColor: '#f2f2f2',
+    borderWidth: 1
   },
   actionButtonText: {
     color: '#06D16E', 

@@ -46,14 +46,17 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row', 
     alignItems: 'center', 
-    backgroundColor: '#e8e8e8', 
-    borderRadius: 25, 
+    backgroundColor: '#ffffffff', 
+    borderRadius: 15, 
     height: 50,
     paddingHorizontal: 15, 
+    borderWidth: 1.5, 
+    borderColor: '#000000ff', 
+    marginTop: 15
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: '#333333',
     height: '100%', 
   },
@@ -64,7 +67,7 @@ const styles = StyleSheet.create({
   searchIcon: {
     width: 20,
     height: 20,
-    tintColor: '#666666', 
+    tintColor: '#949494ff', 
   },
 });
 

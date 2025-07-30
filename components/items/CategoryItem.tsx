@@ -28,30 +28,33 @@ const CategoryItem: React.FC<CategoryItemProps> = ({name, koreanName, icon, onPr
 
 const styles = StyleSheet.create({
   container: {
-    width: '31%', 
+    width: '30%', 
     aspectRatio: 1, 
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Platform.OS === 'ios' ? 'rgba(250, 250, 250, 0.5)' : 'rgba(250, 250, 250, 0.45)',    borderRadius: 10,
-    padding: 10,
+    backgroundColor: Platform.OS === 'ios' ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 1)',    borderRadius: 10,
+    padding: 5,
     margin: 5,
-    shadowColor: '#000000', 
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    // shadowColor: '#9e9e9eff', 
+    // shadowOffset: { width: 2, height: 2 },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 3,
     elevation: 3, 
+    borderWidth: 1, 
+    borderColor: '#f2f2f2', 
   },
   icon: {
-    width: '90%', 
-    height: '90%',
+    width: '85%', 
+    height: '85%',
     resizeMode: 'contain',
     marginBottom: 5,
   },
   name: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333333',
+    color: '#464646ff',
     textAlign: 'center', 
+    fontFamily: 'NotoSansKRBold'
   },
 });
 

@@ -69,7 +69,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#ffffffff',
   },
   scrollViewContent: {
     flexGrow: 1, // ScrollView가 내용을 감싸도록 하면서 스크롤 가능하게

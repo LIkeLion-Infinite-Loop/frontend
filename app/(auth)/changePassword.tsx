@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { AppNavigationProp } from '../../types/navigation.d';
+import { router } from 'expo-router'; // router 임포트
 
 export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -52,7 +53,7 @@ export default function ChangePasswordScreen() {
         Alert.alert('성공', data.message || '비밀번호가 성공적으로 변경되었습니다.');
         setCurrentPassword('');
         setNewPassword('');
-        navigation.goBack();
+        navigation.goBack(); // 이전 페이지로 돌아가기 (원래 요청대로)
       } else {
         Alert.alert('실패', data.message || `비밀번호 변경 실패: ${response.status} ${response.statusText}`);
         console.error('비밀번호 변경 실패 응답:', response.status, data);
@@ -107,11 +108,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, backgroundColor: '#f2f2f2', justifyContent: 'center' },
   title: { fontSize: 20, fontWeight: 'semibold', marginBottom: 24, textAlign: 'center' },
   input: {
-    borderWidth: 1, borderColor: '#ccc', borderRadius: 8,
-    padding: 12, marginBottom: 16, fontSize: 16,
-    color: '#333', // 입력된 텍스트 색상도 명시적으로 설정할 수 있습니다.
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    borderRadius: 8,
+    padding: 12, 
+    marginBottom: 16, 
+    fontSize: 16,
+    color: '#333', 
+    backgroundColor: '#fff', // ✅ 인풋 배경색을 흰색으로 변경
   },
-    button: {
+  button: {
     backgroundColor: '#05D16E',
     paddingVertical: 12,
     marginTop: 24,
@@ -120,7 +126,7 @@ const styles = StyleSheet.create({
     width: '50%', 
     alignSelf: 'center'
   },
-    buttonText: {
+  buttonText: {
     fontSize: 20,
     color: '#fff',
     textAlign: 'center',

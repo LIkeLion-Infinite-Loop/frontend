@@ -6,8 +6,7 @@
     import { StatusBar } from 'expo-status-bar';
     import { useEffect, useState } from 'react';
     import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-    // ✅ AuthProvider 임포트 경로에서 .tsx 확장자를 제거합니다.
-    import { AuthProvider } from '../context/AuthContext'; // .tsx 제거
+    import { AuthProvider } from '../context/AuthContext'; 
 
     SplashScreen.preventAutoHideAsync();
 

@@ -1,135 +1,142 @@
-import { Button, Alert, Linking, View, Text, StyleSheet } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
-import { CameraView, Camera } from 'expo-camera';
-import { router } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Button, ActivityIndicator, Alert, Linking, Dimensions } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { router, Stack } from 'expo-router';
+import { BarcodeScanningResult } from 'expo-camera/build/Camera.types';
+import OverlayWithHole from '../OverlayWithHole'; 
 
-export default function ScanScreen() {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const isProcessing = useRef(false);
+const { width, height } = Dimensions.get('window');
+
+export default function ScannerScreen() {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      (setHasPermission as React.Dispatch<React.SetStateAction<boolean | null>>)(status === 'granted');
-    })();
-  }, []);
+    if (permission === null) {
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
 
-  // 바코드 변수에 string 타입을 명시적으로 지정
-  const handleBarCodeScanned = ({ data: barcode }: { data: string }) => {
-    if (isProcessing.current) return;
-    isProcessing.current = true;
-    console.log(`스캔된 바코드: ${barcode}`);
+const handleBarCodeScanned = (scanningResult: BarcodeScanningResult) => {
+  if (!scanned) {
+    setScanned(true);
+    const { type, data } = scanningResult;
 
-    router.push({
-      pathname: '/scan-result/[barcode]',
-      params: { barcode: barcode },
-    });
+    if (data === '8801056241506') {
+      router.push(`/scan-result/${data}`);
+      return;
+    }
 
-    setTimeout(() => {
-      isProcessing.current = false;
-    }, 3000);
-  };
+    Alert.alert(
+      '바코드 스캔 완료!',
+      `바코드 타입: ${type}\n데이터: ${data}`,
+      [
+        {
+          text: '확인',
+          onPress: () => {
+            router.push(`/scan-result/${encodeURIComponent(data)}`);
+            setScanned(false);
+          },
+        },
+      ]
+    );
+  }
+};
 
-  if (hasPermission === null) {
+
+
+  if (permission === null) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>카메라 권한 요청 중...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00D16E" />
+        <Text style={styles.permissionText}>카메라 권한 요청 중...</Text>
       </View>
     );
   }
-  if (hasPermission === false) {
+
+  if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>카메라 권한이 거부되었습니다. 설정에서 권한을 허용해주세요.</Text>
-        <Button title="권한 설정 열기" onPress={() => Linking.openSettings()} />
+      <View style={styles.loadingContainer}>
+        <Text style={styles.permissionText}>카메라 접근 권한이 거부되었습니다.</Text>
+        <Button
+          title="권한 설정으로 이동"
+          onPress={() => {
+            Alert.alert(
+              "권한 필요",
+              "카메라를 사용하려면 기기 설정에서 권한을 허용해주세요.",
+              [{ text: "확인", onPress: () => Linking.openSettings() }]
+            );
+          }}
+          color="#FF6347"
+        />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen options={{ title: '바코드 스캔' }} />
       <CameraView
+        style={StyleSheet.absoluteFill}
         onBarcodeScanned={handleBarCodeScanned}
-        style={StyleSheet.absoluteFillObject}
-      />
-
-      {/* 마스크 및 안내문구 */}
-      <View style={styles.maskContainer}>
-        {/* 오버레이 레이어 */}
-        <View style={styles.overlayTop}>
-          {/* 안내 문구: overlayTop 안에 배치하여 함께 움직이도록 함 */}
-          <Text style={styles.scanInstructionText}>
-            바코드나 QR 코드를 사각형 안에 비춰주세요
-          </Text>
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr", "ean13", "code128", "datamatrix"],
+        }}
+        onCameraReady={() => console.log('Camera is ready')}
+      >
+        <OverlayWithHole />
+        <View style={styles.instructionContainer}>
+          <Text style={styles.instruction}>바코드를 사각형 안에 비춰주세요</Text>
         </View>
+      </CameraView>
 
-        <View style={styles.middleRow}>
-          <View style={styles.overlaySide} />
-          <View style={styles.scanBox} />
-          <View style={styles.overlaySide} />
+      {scanned && (
+        <View style={styles.rescanButton}>
+          <Button
+            title="다시 스캔"
+            onPress={() => setScanned(false)}
+            color="#00D16E"
+          />
         </View>
-
-        <View style={styles.overlayBottom} />
-      </View>
-    </View>
+      )}
+    </SafeAreaView>
   );
-
 }
-const SCAN_BOX_SIZE = 250;
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center', // 텍스트를 중앙에 배치하기 위해 추가
-    alignItems: 'center', // 텍스트를 중앙에 배치하기 위해 추가
+    backgroundColor: 'black',
   },
-  text: { // 'text' 스타일 추가
-    color: '#fff',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f4f7',
+  },
+  permissionText: {
     fontSize: 18,
     textAlign: 'center',
     marginHorizontal: 20,
+    marginTop: 10,
+    color: '#333',
   },
-  maskContainer: {
+  instructionContainer: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center',
+    bottom: 160,
+    width: '100%',
     alignItems: 'center',
   },
-  scanInstructionText: {
-    textAlign: 'center',
+  instruction: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    color: 'white',
+    textAlign: 'center',
     paddingHorizontal: 20,
   },
-  overlayTop: {
-    flex: 2.5,
-    width: '100%',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 40,
-  },
-  middleRow: {
-    flexDirection: 'row',
-    height: SCAN_BOX_SIZE,
-  },
-  overlaySide: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  scanBox: {
-    width: SCAN_BOX_SIZE,
-    height: SCAN_BOX_SIZE,
-    borderColor: '#fff',
-    borderWidth: 2,
-    borderRadius: 10,
-    backgroundColor: 'transparent',
-  },
-  overlayBottom: {
-    flex: 0.1,
-    width: '100%',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
+  rescanButton: {
+    position: 'absolute',
+    bottom: 50,
+    alignSelf: 'center',
+    zIndex: 1,
+  }
 });

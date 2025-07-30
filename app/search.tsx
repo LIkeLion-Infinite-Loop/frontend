@@ -78,19 +78,19 @@ useEffect(() => {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
+  safeArea: { flex: 1, backgroundColor: '#ffffff' },
   container: { flex: 1, padding: 20 },
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
     padding: 15,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fcfcfcff',
     borderRadius: 10,
   },
   itemIcon: { width: 50, height: 50, marginRight: 15 },
   itemTextContainer: { flex: 1 },
-  itemName: { fontSize: 16, fontWeight: '600' },
+  itemName: { fontSize: 14, fontWeight: '600' },
   itemDescription: { fontSize: 14, color: '#555', marginTop: 4 },
   noResultsText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: 'gray' },
 });

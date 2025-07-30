@@ -18,7 +18,7 @@ export default function ProfileScreen() {
       await AsyncStorage.removeItem('refreshToken');
       await AsyncStorage.removeItem('userInfo');
       Alert.alert('로그아웃 되었습니다.');
-      router.replace('/login'); // 뒤로가기 방지
+      router.replace('/login');
     } catch (error) {
       console.error('로그아웃 오류:', error);
       Alert.alert('⚠️ 로그아웃 실패', '잠시 후 다시 시도해주세요.');
