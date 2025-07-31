@@ -1,113 +1,120 @@
-    import { useColorScheme } from '@/hooks/useColorScheme';
-    import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-    import { useFonts } from 'expo-font';
-    import { Stack } from 'expo-router';
-    import * as SplashScreen from 'expo-splash-screen';
-    import { StatusBar } from 'expo-status-bar';
-    import { useEffect, useState } from 'react';
-    import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-    import { AuthProvider } from '../context/AuthContext'; 
+// app/_layout.js
 
-    SplashScreen.preventAutoHideAsync();
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-    // 로딩 화면 컴포넌트
-    function LoadingScreen() {
-      return (
-        <View style={loadingStyles.container}>
-          <ActivityIndicator size="large" color="#06D16E" />
-          <Text style={loadingStyles.text}>앱을 준비 중입니다...</Text>
-        </View>
-      );
-    }
+// 직접 만드신 ThemeProvider를 가져옵니다.
+import { ThemeProvider as CustomThemeProvider } from '../context/ThemeContext'; 
+// @react-navigation/native의 ThemeProvider는 필요 없으면 제거해도 됩니다.
+// import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'; 
 
-    const loadingStyles = StyleSheet.create({
-      container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f2f2f2',
-      },
-      text: {
-        marginTop: 10,
-        fontSize: 16,
-        color: '#333333',
-      },
-    });
+import { useFonts } from 'expo-font';
+import { AuthProvider } from '../context/AuthContext'; 
+import { useColorScheme } from '@/hooks/useColorScheme'; // 또는 'react-native'에서 가져온 useColorScheme
 
-    export default function RootLayout() {
-      const colorScheme = useColorScheme();
-      const [fontLoaded, fontError] = useFonts({
-        SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-        'NotoSansKRRegular': require('../assets/fonts/NotoSansKR-Regular.ttf'),
-      });
+SplashScreen.preventAutoHideAsync();
 
-      const [appInitialLoadDone, setAppInitialLoadDone] = useState(false);
+// 로딩 화면 컴포넌트
+function LoadingScreen() {
+  return (
+    <View style={loadingStyles.container}>
+      <ActivityIndicator size="large" color="#06D16E" />
+      <Text style={loadingStyles.text}>앱을 준비 중입니다...</Text>
+    </View>
+  );
+}
 
-      useEffect(() => {
-        async function prepareApp() {
-          try {
-            if (!fontLoaded && !fontError) {
-              return;
-            }
+const loadingStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f2f2f2',
+  },
+  text: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#333333',
+  },
+});
 
-            await SplashScreen.hideAsync();
-            console.log('스플래시 화면 숨김');
+export default function RootLayout() {
+  // useColorScheme은 이제 CustomThemeProvider 내부에서 사용되므로, 여기서는 직접 사용하지 않아도 됩니다.
+  // 하지만 스플래시 화면 등의 초기 로딩 시 테마를 설정해야 한다면 유지할 수 있습니다.
+  const colorScheme = useColorScheme(); // 필요에 따라 유지 또는 제거
 
-            setAppInitialLoadDone(true);
+  const [fontLoaded, fontError] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    'NotoSansKRRegular': require('../assets/fonts/NotoSansKR-Regular.ttf'),
+  });
 
-          } catch (e) {
-            console.warn('앱 초기화 중 오류 발생:', e);
-            await SplashScreen.hideAsync();
-            setAppInitialLoadDone(true);
-          }
+  const [appInitialLoadDone, setAppInitialLoadDone] = useState(false);
+
+  useEffect(() => {
+    async function prepareApp() {
+      try {
+        if (!fontLoaded && !fontError) {
+          return;
         }
 
-        prepareApp();
-      }, [fontLoaded, fontError]);
+        await SplashScreen.hideAsync();
+        console.log('스플래시 화면 숨김');
 
-      // 폰트 로딩 오류 발생 시
-      if (fontError) {
-        return (
-          <View style={loadingStyles.container}>
-            <Text style={loadingStyles.text}>폰트 로드 중 오류 발생: {fontError.message}</Text>
-          </View>
-        );
+        setAppInitialLoadDone(true);
+
+      } catch (e) {
+        console.warn('앱 초기화 중 오류 발생:', e);
+        await SplashScreen.hideAsync();
+        setAppInitialLoadDone(true);
       }
-
-      // 폰트 로딩 또는 앱 초기화가 완료되지 않았을 때 로딩 화면 표시
-      if (!fontLoaded || !appInitialLoadDone) {
-        return <LoadingScreen />;
-      }
-
-      return (
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AuthProvider>
-            <Stack
-              screenOptions={{
-                headerStyle: {
-                  backgroundColor: '#00D16E',
-                },
-                headerTintColor: '#fff',
-                headerTitleStyle: {
-                  fontWeight: 'bold',
-                },
-                headerBackTitle: '',
-              }}
-            >
-              <Stack.Screen name="index" options={{ headerShown: false, title: '' }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false, title: ''}} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-
-
-              <Stack.Screen name="search" options={{ title: '검색 결과' }} />
-              <Stack.Screen name="scan-result/[barcode]" options={{ title: '스캔 결과' }} />
-
-              {/* 404 Not Found 화면 */}
-              <Stack.Screen name="+not-found" options={{ headerShown: false }} />
-            </Stack>
-          </AuthProvider>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      );
     }
-    
+
+    prepareApp();
+  }, [fontLoaded, fontError]);
+
+  if (fontError) {
+    return (
+      <View style={loadingStyles.container}>
+        <Text style={loadingStyles.text}>폰트 로드 중 오류 발생: {fontError.message}</Text>
+      </View>
+    );
+  }
+
+  if (!fontLoaded || !appInitialLoadDone) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    // 직접 만드신 CustomThemeProvider로 앱 전체를 감싸줍니다.
+    <CustomThemeProvider> 
+      <AuthProvider>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#00D16E',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+            headerBackTitle: '',
+          }}
+        >
+          <Stack.Screen name="index" options={{ headerShown: false, title: '' }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false, title: ''}} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
+
+          <Stack.Screen name="search" options={{ title: '검색 결과' }} />
+          <Stack.Screen name="scan-result/[barcode]" options={{ title: '스캔 결과' }} />
+
+          {/* 404 Not Found 화면 */}
+          <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+        </Stack>
+      </AuthProvider>
+      <StatusBar style="auto" />
+    </CustomThemeProvider>
+  );
+}

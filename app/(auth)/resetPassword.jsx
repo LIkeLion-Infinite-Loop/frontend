@@ -1,11 +1,20 @@
 import axios from 'axios';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
+import { useTheme } from '@/context/ThemeContext'; // useTheme 훅 가져오기
 
 export default function ResetPasswordScreen() {
   const [email, setEmail] = useState('');
+  const { isDarkMode } = useTheme(); // isDarkMode 상태 가져오기
+
+  // 다크 모드에 따른 동적 스타일 변수 정의
+  const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
+  const titleColor = isDarkMode ? '#E0E0E0' : '#000000';
+  const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
+  const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
+  const inputFieldTextColor = isDarkMode ? '#E0E0E0' : '#333333';
 
   const handleReset = async () => {
     if (!email) {
@@ -28,15 +37,25 @@ export default function ResetPasswordScreen() {
   const handleGoHome = () => router.push('/login');
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>비밀번호 재설정</Text>
+    <View style={containerStyle}> {/* 다크 모드 배경색 적용 */}
+      <Text style={[styles.title, { color: titleColor }]}>비밀번호 재설정</Text> {/* 다크 모드 글자색 적용 */}
 
       <View style={styles.form}>
-        <InputField value={email} onChangeText={setEmail} placeholder="이메일 주소" />
+        <InputField 
+          value={email} 
+          onChangeText={setEmail} 
+          placeholder="이메일 주소" 
+          style={[
+            styles.inputFieldCommon,
+            { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
+          ]}
+          placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+        />
       </View>
       <TouchableOpacity onPress={handleReset} style={styles.resetButton}>
         <Text style={styles.resetButtonText}>확인</Text>
       </TouchableOpacity>
+
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
         <Image
           source={require('../../assets/images/home_logo.png')}
@@ -50,45 +69,65 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: '#F2F2F2', // 라이트 모드 배경색
     paddingHorizontal: 24,
     justifyContent: 'center',
+    alignItems: 'center', // 추가: 컨테이너 내부 요소 중앙 정렬
+  },
+  darkContainer: {
+    flex: 1,
+    backgroundColor: '#121212', // 다크 모드 배경색
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    alignItems: 'center', // 추가: 컨테이너 내부 요소 중앙 정렬
   },
   title: {
     textAlign: 'center',
     fontFamily: 'NotoSansKRRegular',
-    fontSize: 20,
-    color: '#05D16E',
-    marginBottom: 24,
+    fontSize: 25,
+    // color는 동적으로 설정
+    marginBottom: 180,
+    marginTop: -80,
   },
   form: {
     gap: 8,
+    width: '100%', // 추가: 폼 너비를 100%로 설정
+    alignItems: 'center', // 추가: 폼 내부 요소 중앙 정렬
   },
-  label: {
+  label: { // 이 스타일은 현재 사용되지 않는 것 같습니다.
     fontSize: 20,
     fontFamily: 'NotoSansKRRegular',
     marginBottom: 4,
     marginTop: 12,
   },
+  inputFieldCommon: {
+    width: '100%', // 인풋 필드 너비 100%
+    paddingHorizontal: 16, 
+    paddingVertical: 12, 
+    borderWidth: 1, 
+    fontSize: 16, 
+    fontFamily: 'NotoSansKRRegular', 
+    borderRadius: 8, // 둥근 모서리
+  },
   resetButton: {
     backgroundColor: '#05D16E',
     paddingVertical: 12,
-    marginTop: 24,
+    marginTop: 30,
     marginBottom: 30,
     borderRadius: 10, 
     width: '50%', 
     alignSelf: 'center'
   },
   resetButtonText: {
-    fontSize: 20,
+    fontSize: 22,
     color: '#fff',
     textAlign: 'center',
     fontFamily: 'NotoSansKRRegular',
   },
   homeButton: {
-    position: 'absolute',    
-    bottom: 80,                
-    alignSelf: 'center',        
+    position: 'absolute',    
+    bottom: 80,                
+    alignSelf: 'center',        
     alignItems: 'center',
   },
   homeLogo: {

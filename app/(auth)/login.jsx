@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
+import { useTheme } from '@/context/ThemeContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,17 @@ export default function LoginScreen() {
   const [userInfo, setUserInfo] = useState(null); 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const { isDarkMode } = useTheme();
+
+  // 다크 모드에 따라 동적으로 스타일을 결정하는 변수
+  const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
+  const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
+  const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
+  const inputFieldTextColor = isDarkMode ? '#E0E0E0' : '#333333';
+  const rememberMeTextColor = isDarkMode ? '#BBBBBB' : '#666666';
+  const linkTextColor = isDarkMode ? '#AAAAAA' : '#666666';
+  const linkSeparatorColor = isDarkMode ? '#777777' : '#999999';
+  const passwordToggleColor = isDarkMode ? '#BBBBBB' : '#9FA6B2';
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
@@ -96,9 +108,9 @@ export default function LoginScreen() {
       console.error('내 정보 조회 오류:', error);
     }
   };
-  
+    
   return (
-    <View style={styles.container}>
+    <View style={containerStyle}>
       <Image
         source={require('../../assets/images/gr_biugo.png')}
         style={styles.logo}
@@ -109,7 +121,11 @@ export default function LoginScreen() {
           placeholder="이메일 또는 아이디" 
           value={email} 
           onChangeText={setEmail} 
-          style={styles.inputFieldCommon} 
+          style={[
+            styles.inputFieldCommon, 
+            { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
+          ]} 
+          placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
         />
 
         <View style={styles.passwordInputContainer}>
@@ -118,7 +134,12 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword} 
-            style={[styles.inputFieldCommon, styles.passwordInputFieldSpecific]} 
+            style={[
+              styles.inputFieldCommon, 
+              styles.passwordInputFieldSpecific,
+              { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
+            ]} 
+            placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
           />
           <TouchableOpacity 
             onPress={() => setShowPassword(!showPassword)} 
@@ -127,7 +148,7 @@ export default function LoginScreen() {
             <MaterialCommunityIcons 
               name={showPassword ? 'eye-off' : 'eye'} 
               size={24} 
-              color="#9FA6B2" 
+              color={passwordToggleColor}
             />
           </TouchableOpacity>
         </View>
@@ -139,9 +160,9 @@ export default function LoginScreen() {
           <MaterialCommunityIcons 
             name={rememberMe ? 'checkbox-marked' : 'checkbox-blank-outline'} 
             size={20} 
-            color="#05D16E" 
+            color={isDarkMode ? '#04c75a' : '#05D16E'}
           />
-          <Text style={styles.rememberMeText}>아이디 저장하기</Text>
+          <Text style={[styles.rememberMeText, { color: rememberMeTextColor }]}>아이디 저장하기</Text>
         </TouchableOpacity> 
       </View>
 
@@ -152,19 +173,19 @@ export default function LoginScreen() {
 
       <View style={styles.linksRow}>
         <TouchableOpacity onPress={() => router.push('/signup')} style={styles.linkBox}>
-          <Text style={styles.linkText}>가입하기</Text>
+          <Text style={[styles.linkText, { color: linkTextColor }]}>가입하기</Text>
         </TouchableOpacity>
         
-        <Text style={styles.linkSeparator}>|</Text> 
+        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text> 
 
         <TouchableOpacity onPress={() => router.push('/findId')} style={styles.linkBox}>
-          <Text style={styles.linkText}>아이디 찾기</Text>
+          <Text style={[styles.linkText, { color: linkTextColor }]}>아이디 찾기</Text>
         </TouchableOpacity>
 
-        <Text style={styles.linkSeparator}>|</Text> 
+        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text> 
 
         <TouchableOpacity onPress={() => router.push('/resetPassword')} style={styles.linkBox}>
-          <Text style={styles.linkText}>비밀번호 재설정</Text>
+          <Text style={[styles.linkText, { color: linkTextColor }]}>비밀번호 재설정</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -181,6 +202,15 @@ const styles = StyleSheet.create({
     paddingTop: 80, 
     paddingBottom: 50, 
   },
+  darkContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
+    paddingHorizontal: 24,
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingTop: 80, 
+    paddingBottom: 50, 
+  },
   logo: {
     width: 260, 
     height: 200, 
@@ -191,18 +221,16 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 16, 
     marginBottom: 20,
+    alignItems: 'center', // 추가: form 내부 요소들을 중앙 정렬
   },
   inputFieldCommon: {
     width: '100%', 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 50, 
     paddingHorizontal: 16, 
     paddingVertical: 12, 
     borderWidth: 1, 
-    borderColor: '#E0E0E0', 
     fontSize: 16, 
     fontFamily: 'NotoSansKRRegular', 
-    color: '#333333', 
+    borderRadius: 8,
   },
   passwordInputContainer: {
     position: 'relative', 
@@ -215,7 +243,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 15, 
     top: '50%', 
-    transform: [{ translateY: -25 }], 
+    transform: [{ translateY: -12 }],
     padding: 5, 
     zIndex: 1, 
   },
@@ -224,14 +252,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 5,
     marginBottom: 10,
-    paddingLeft: 10,
-    alignSelf: 'flex-start', 
+    // alignSelf: 'flex-start' 제거
+    width: '100%', // 추가
+    paddingHorizontal: 10, // 추가
   }, 
   rememberMeText: {
     marginLeft: 8,
     fontSize: 14,
     fontFamily: 'NotoSansKRRegular',
-    color: '#666666',
   },
   loginButton: {
     backgroundColor: '#05D16E', 
@@ -271,12 +299,10 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14, 
-    color: '#666666', 
     fontFamily: 'NotoSansKRRegular',
   },
   linkSeparator: {
     fontSize: 14,
-    color: '#999999', 
     marginHorizontal: 5, 
   },
 });

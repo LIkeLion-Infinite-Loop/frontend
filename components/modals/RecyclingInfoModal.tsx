@@ -1,7 +1,9 @@
-import { CategoryData } from '@/constants/recyclingData'; // 위에서 정의한 타입 임포트
+// RecyclingInfoModal.tsx
+import { CategoryData } from '@/constants/recyclingData';
 import { Image } from 'expo-image';
 import React from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '@/context/ThemeContext'; // useTheme 훅 가져오기
 
 interface RecyclingInfoModalProps {
   isVisible: boolean;
@@ -10,9 +12,17 @@ interface RecyclingInfoModalProps {
 }
 
 const RecyclingInfoModal: React.FC<RecyclingInfoModalProps> = ({ isVisible, onClose, categoryData }) => {
+  const { isDarkMode } = useTheme(); // isDarkMode 상태 가져오기
+
   if (!categoryData) {
-    return null; // 데이터가 없으면 아무것도 렌더링하지 않음
+    return null;
   }
+
+  // 다크 모드에 따른 동적 스타일 변수
+  const modalContainerBackgroundColor = isDarkMode ? '#222222' : 'white';
+  const titleColor = isDarkMode ? '#E0E0E0' : 'black';
+  const itemNameColor = isDarkMode ? '#E0E0E0' : 'black';
+  const itemDescriptionColor = isDarkMode ? '#AAAAAA' : '#555';
 
   return (
     <Modal
@@ -22,8 +32,8 @@ const RecyclingInfoModal: React.FC<RecyclingInfoModalProps> = ({ isVisible, onCl
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.modalContainer}>
-          <Text style={styles.title}>[{categoryData.koreanName}] 항목별 재활용법</Text>
+        <Pressable style={[styles.modalContainer, { backgroundColor: modalContainerBackgroundColor }]}>
+          <Text style={[styles.title, { color: titleColor }]}>[{categoryData.koreanName}] 항목별 재활용법</Text>
 
           <FlatList
             data={categoryData.items}
@@ -32,8 +42,16 @@ const RecyclingInfoModal: React.FC<RecyclingInfoModalProps> = ({ isVisible, onCl
               <View style={styles.itemRow}>
                 <Image source={item.icon} style={styles.itemIcon} />
                 <View style={styles.itemTextContainer}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemDescription}>{item.description}</Text>
+                  <Text style={[styles.itemName, { color: itemNameColor }]}>{item.name}</Text>
+                  {/* 줄바꿈 문자를 처리하여 텍스트를 여러 줄로 렌더링 */}
+                  <Text style={[styles.itemDescription, { color: itemDescriptionColor }]}>
+                    {item.description.split('\n').map((line, index, arr) => (
+                      <Text key={index}>
+                        {line}
+                        {index < arr.length - 1 && '\n'}
+                      </Text>
+                    ))}
+                  </Text>
                 </View>
               </View>
             )}
@@ -54,7 +72,6 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '85%',
     maxHeight: '60%',
-    backgroundColor: 'white',
     borderRadius: 20,
     padding: 25,
     shadowColor: '#000',
@@ -88,7 +105,6 @@ const styles = StyleSheet.create({
   },
   itemDescription: {
     fontSize: 14,
-    color: '#555',
     marginTop: 4,
   },
 });

@@ -1,14 +1,15 @@
 // app/(tabs)/shop.tsx
 import { router } from 'expo-router';
 import React from 'react';
-import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageSourcePropType, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '@/context/ThemeContext';
 
 interface ShopItem {
   id: string;
   name: string;
   price: string;
-  type: 'donation' | 'purchase'; 
-  image: ImageSourcePropType; 
+  type: 'donation' | 'purchase';
+  image: ImageSourcePropType;
 }
 
 const shopItems: ShopItem[]  = [
@@ -44,38 +45,65 @@ const shopItems: ShopItem[]  = [
 
 export default function ShopScreen() {
   const [myPoints, setMyPoints] = React.useState(0);
+  const { isDarkMode } = useTheme();
+
+  // 다크 모드에 따른 동적 스타일 변수
+  const containerBackgroundColor = isDarkMode ? '#121212' : '#FFFFFF';
+  const pointsLabelColor = isDarkMode ? '#E0E0E0' : '#333';
+  const pointsValueColor = isDarkMode ? '#FFFFFF' : '#000';
+  const dividerColor = isDarkMode ? '#444444' : '#DBDBDB';
+  const exchangeTitleColor = isDarkMode ? '#E0E0E0' : '#333';
+  const itemCardBackgroundColor = isDarkMode ? '#1E1E1E' : '#fdfdfdff';
+  const itemNameColor = isDarkMode ? '#E0E0E0' : '#333333';
+  const itemPriceColor = isDarkMode ? '#BBBBBB' : '#666666';
+  const actionButtonBackgroundColor = isDarkMode ? '#333333' : '#ffffffff';
+  const actionButtonBorderColor = isDarkMode ? '#555555' : '#f2f2f2';
+  const actionButtonTextColor = isDarkMode ? '#04c75a' : '#06D16E';
 
   const handleAction = (item: ShopItem) => {
     if (item.type === 'donation') {
-      router.push('/shopDetail'); // ✅ 반드시 alert() 제거!
+      router.push('/shopDetail');
     } else {
-      alert(`${item.name}을(를) ${item.price}에 구매하기`);
+      Alert.alert('구매하기', `${item.name}을(를) ${item.price}에 구매하시겠습니까?`);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: containerBackgroundColor }]}>
       <ScrollView style={styles.scrollViewContent}>
         <View style={styles.pointsSection}>
-          <Text style={styles.pointsLabel}>내 포인트</Text>
-          <Text style={styles.pointsValue}>{myPoints}원</Text>
-          <View style={styles.divider} />
+          <Text style={[styles.pointsLabel, { color: pointsLabelColor }]}>내 포인트</Text>
+          {/* --- 수정된 부분 --- */}
+          <Text style={[styles.pointsValue, { color: pointsValueColor }]}>{`${myPoints}원`}</Text>
+          <View style={[styles.divider, { backgroundColor: dividerColor }]} />
         </View>
 
         <View style={styles.exchangeSection}>
-          <Text style={styles.exchangeTitle}>포인트로 바꿔요</Text>
+          <Text style={[styles.exchangeTitle, { color: exchangeTitleColor }]}>포인트로 바꿔요</Text>
           {shopItems.map((item) => (
-            <View key={item.id} style={styles.itemCard}>
-              <Image source={item.image} style={styles.itemImage} />
+            <View key={item.id} style={[styles.itemCard, { backgroundColor: itemCardBackgroundColor }]}>
+              <Image source={item.image} style={styles.itemImage} resizeMode="contain" />
               <View style={styles.itemDetails}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{item.price}</Text>
+                <Text
+                    style={[styles.itemName, { color: itemNameColor }]}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                >
+                    {item.name}
+                </Text>
+                <Text style={[styles.itemPrice, { color: itemPriceColor }]}>{item.price}</Text>
               </View>
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: actionButtonBackgroundColor,
+                    borderColor: actionButtonBorderColor,
+                  }
+                ]}
                 onPress={() => handleAction(item)}
               >
-                <Text style={styles.actionButtonText}>
+                <Text style={[styles.actionButtonText, { color: actionButtonTextColor }]}>
                   {item.type === 'donation' ? '기부하기' : '구매하기'}
                 </Text>
               </TouchableOpacity>
@@ -90,12 +118,13 @@ export default function ShopScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffffff',
+    // backgroundColor는 동적으로 설정
   },
   scrollViewContent: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 40,
   },
   pointsSection: {
     marginTop: 70,
@@ -103,18 +132,18 @@ const styles = StyleSheet.create({
   },
   pointsLabel: {
     fontSize: 14,
-    color: '#333',
+    // color는 동적으로 설정
     marginBottom: 5,
   },
   pointsValue: {
     fontSize: 32,
     fontWeight: 'normal',
-    color: '#000',
+    // color는 동적으로 설정
     marginBottom: 20,
   },
   divider: {
     height: 1,
-    backgroundColor: '#DBDBDB',
+    // backgroundColor는 동적으로 설정
     marginVertical: 15,
   },
   exchangeSection: {
@@ -123,13 +152,13 @@ const styles = StyleSheet.create({
   exchangeTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    // color는 동적으로 설정
     marginBottom: 20,
   },
   itemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fdfdfdff',
+    // backgroundColor는 동적으로 설정
     borderRadius: 10,
     padding: 10,
     marginBottom: 15,
@@ -144,32 +173,36 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 5,
     marginRight: 20,
-    resizeMode: 'cover',
+    // resizeMode: 'cover', -> 'contain'으로 변경
   },
   itemDetails: {
     flex: 1,
+    marginRight: 10,
   },
   itemName: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333333',
+    // color는 동적으로 설정
     marginBottom: 10,
   },
   itemPrice: {
     fontSize: 16,
-    color: '#666666',
+    // color는 동적으로 설정
   },
   actionButton: {
-    backgroundColor: '#ffffffff',
-    paddingVertical: 15,
-    paddingHorizontal: 10,
+    // backgroundColor는 동적으로 설정
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderRadius: 20,
-    borderColor: '#f2f2f2',
-    borderWidth: 1
+    // borderColor는 동적으로 설정
+    borderWidth: 1,
+    minWidth: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   actionButtonText: {
-    color: '#06D16E',
+    // color는 동적으로 설정
     fontSize: 14,
-    fontWeight: 'bold',
+      fontWeight: 'bold',
   },
 });
