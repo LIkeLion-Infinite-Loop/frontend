@@ -1,3 +1,5 @@
+// app/(tabs)/shop.tsx
+import { router } from 'expo-router';
 import React from 'react';
 import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -8,55 +10,58 @@ interface ShopItem {
   type: 'donation' | 'purchase'; 
   image: ImageSourcePropType; 
 }
+
 const shopItems: ShopItem[]  = [
   {
     id: '1',
     name: '자연을 위한 한 걸음, \n나무 심기',
     price: '기부하기',
     type: 'donation',
-    image: require('../../assets/images/tree.png'), },
+    image: require('../../assets/images/tree.png'),
+  },
   {
     id: '2',
     name: '친환경 수세미',
     price: '1500P',
     type: 'purchase',
-    image: require('../../assets/images/sponge.png'), },
+    image: require('../../assets/images/sponge.png'),
+  },
   {
     id: '3',
     name: '친환경 대나무 칫솔',
     price: '1500P',
     type: 'purchase',
-    image: require('../../assets/images/toothbrush.png'), },
+    image: require('../../assets/images/toothbrush.png'),
+  },
   {
     id: '4',
     name: '친환경 천연 수제 비누',
     price: '2000P',
     type: 'purchase',
-    image: require('../../assets/images/soap.png'), },
+    image: require('../../assets/images/soap.png'),
+  },
 ];
 
 export default function ShopScreen() {
   const [myPoints, setMyPoints] = React.useState(0);
 
-  const handleAction = (item : ShopItem) => {
+  const handleAction = (item: ShopItem) => {
     if (item.type === 'donation') {
-      alert(`${item.name}에 기부하기`); 
+      router.push('/shopDetail'); // ✅ 반드시 alert() 제거!
     } else {
-      alert(`${item.name}을(를) ${item.price}에 구매하기`); 
+      alert(`${item.name}을(를) ${item.price}에 구매하기`);
     }
   };
 
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollViewContent}>
-        {/* 내 포인트 섹션 */}
         <View style={styles.pointsSection}>
           <Text style={styles.pointsLabel}>내 포인트</Text>
           <Text style={styles.pointsValue}>{myPoints}원</Text>
           <View style={styles.divider} />
         </View>
 
-        {/* 포인트로 바꿔요 섹션 */}
         <View style={styles.exchangeSection}>
           <Text style={styles.exchangeTitle}>포인트로 바꿔요</Text>
           {shopItems.map((item) => (
@@ -128,10 +133,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginBottom: 15,
-   shadowColor: '#000',
-   shadowOffset: { width: 0, height: 1 },
-   shadowOpacity: 0.1,
-   shadowRadius: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     elevation: 2,
   },
   itemImage: {
@@ -155,7 +160,7 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   actionButton: {
-    backgroundColor: '#ffffffff', 
+    backgroundColor: '#ffffffff',
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderRadius: 20,
@@ -163,7 +168,7 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   actionButtonText: {
-    color: '#06D16E', 
+    color: '#06D16E',
     fontSize: 14,
     fontWeight: 'bold',
   },
