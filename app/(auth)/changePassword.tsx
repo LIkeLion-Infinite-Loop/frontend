@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { AppNavigationProp } from '../../types/navigation.d';
-import { router } from 'expo-router'; // router 임포트
+import axios from 'axios';
 
 export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -25,42 +33,41 @@ export default function ChangePasswordScreen() {
       return;
     }
 
+    const payload = {
+      current_password: currentPassword,
+      new_password: newPassword,
+    };
+
+    console.log('[🔐 요청 데이터]', payload);
+    console.log('[🔐 토큰 Raw]', JSON.stringify(userToken));
+    console.log('[🔐 Authorization 헤더]', `Bearer ${userToken}`);
+
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://40.233.103.122:8080/api/users/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userToken}`
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
-      });
+      const res = await axios.post(
+        'http://40.233.103.122:8080/api/users/change-password',
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      const responseText = await response.text();
-      let data = null;
-      try {
-        data = JSON.parse(responseText);
-      } catch (jsonError) {
-        console.warn('응답이 JSON 형식이 아님:', responseText);
-        data = { message: responseText || '알 수 없는 응답 형식' };
-      }
+      const message = res.data?.message || '비밀번호가 성공적으로 변경되었습니다.';
+      Alert.alert('✅ 성공', message);
+      setCurrentPassword('');
+      setNewPassword('');
+      navigation.goBack();
 
-      if (response.ok) {
-        Alert.alert('성공', data.message || '비밀번호가 성공적으로 변경되었습니다.');
-        setCurrentPassword('');
-        setNewPassword('');
-        navigation.goBack(); // 이전 페이지로 돌아가기 (원래 요청대로)
-      } else {
-        Alert.alert('실패', data.message || `비밀번호 변경 실패: ${response.status} ${response.statusText}`);
-        console.error('비밀번호 변경 실패 응답:', response.status, data);
-      }
-    } catch (error) {
-      console.error('비밀번호 변경 에러 (네트워크 또는 기타):', error);
-      Alert.alert('에러', '서버 통신 중 문제가 발생했습니다. 네트워크 연결 또는 서버 상태를 확인해주세요.');
+    } catch (error: any) {
+      const status = error.response?.status;
+      const message = error.response?.data?.message || error.message;
+
+      console.error('❌ 응답 오류:', status, message);
+      Alert.alert('❌ 실패', `에러 ${status || ''}: ${message}`);
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +81,7 @@ export default function ChangePasswordScreen() {
         style={styles.input}
         secureTextEntry
         placeholder="현재 비밀번호"
-        placeholderTextColor="#888" 
+        placeholderTextColor="#888"
         value={currentPassword}
         onChangeText={setCurrentPassword}
         editable={!isLoading}
@@ -83,7 +90,7 @@ export default function ChangePasswordScreen() {
         style={styles.input}
         secureTextEntry
         placeholder="새 비밀번호"
-        placeholderTextColor="#888" 
+        placeholderTextColor="#888"
         value={newPassword}
         onChangeText={setNewPassword}
         editable={!isLoading}
@@ -105,26 +112,36 @@ export default function ChangePasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#f2f2f2', justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: 'semibold', marginBottom: 24, textAlign: 'center' },
+  container: {
+    flex: 1,
+    padding: 24,
+    backgroundColor: '#f2f2f2',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
   input: {
-    borderWidth: 1, 
-    borderColor: '#ccc', 
+    borderWidth: 1,
+    borderColor: '#ccc',
     borderRadius: 8,
-    padding: 12, 
-    marginBottom: 16, 
+    padding: 12,
+    marginBottom: 16,
     fontSize: 16,
-    color: '#333', 
-    backgroundColor: '#fff', // ✅ 인풋 배경색을 흰색으로 변경
+    color: '#333',
+    backgroundColor: '#fff',
   },
   button: {
     backgroundColor: '#05D16E',
     paddingVertical: 12,
     marginTop: 24,
     marginBottom: 30,
-    borderRadius: 10, 
-    width: '50%', 
-    alignSelf: 'center'
+    borderRadius: 10,
+    width: '50%',
+    alignSelf: 'center',
   },
   buttonText: {
     fontSize: 20,
