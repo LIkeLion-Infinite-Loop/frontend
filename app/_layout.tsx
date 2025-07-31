@@ -8,8 +8,6 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 // 직접 만드신 ThemeProvider를 가져옵니다.
 import { ThemeProvider as CustomThemeProvider } from '../context/ThemeContext'; 
-// @react-navigation/native의 ThemeProvider는 필요 없으면 제거해도 됩니다.
-// import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'; 
 
 import { useFonts } from 'expo-font';
 import { AuthProvider } from '../context/AuthContext'; 
@@ -19,10 +17,18 @@ SplashScreen.preventAutoHideAsync();
 
 // 로딩 화면 컴포넌트
 function LoadingScreen() {
+  // useColorScheme 훅을 여기서 사용하여 로딩 화면도 다크 모드 지원 가능
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  const containerBackgroundColor = isDarkMode ? '#121212' : '#f2f2f2';
+  const textColor = isDarkMode ? '#E0E0E0' : '#333333';
+  const indicatorColor = isDarkMode ? '#04c75a' : '#06D16E'; // 다크 모드 시 약간 어둡게
+
   return (
-    <View style={loadingStyles.container}>
-      <ActivityIndicator size="large" color="#06D16E" />
-      <Text style={loadingStyles.text}>앱을 준비 중입니다...</Text>
+    <View style={[loadingStyles.container, { backgroundColor: containerBackgroundColor }]}>
+      <ActivityIndicator size="large" color={indicatorColor} />
+      <Text style={[loadingStyles.text, { color: textColor }]}>앱을 준비 중입니다...</Text>
     </View>
   );
 }
@@ -32,19 +38,16 @@ const loadingStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f2f2f2',
   },
   text: {
     marginTop: 10,
     fontSize: 16,
-    color: '#333333',
   },
 });
 
 export default function RootLayout() {
-  // useColorScheme은 이제 CustomThemeProvider 내부에서 사용되므로, 여기서는 직접 사용하지 않아도 됩니다.
-  // 하지만 스플래시 화면 등의 초기 로딩 시 테마를 설정해야 한다면 유지할 수 있습니다.
-  const colorScheme = useColorScheme(); // 필요에 따라 유지 또는 제거
+  const colorScheme = useColorScheme(); // 앱의 현재 테마를 가져옵니다.
+  const isDarkMode = colorScheme === 'dark'; // 현재 테마가 'dark'인지 확인합니다.
 
   const [fontLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -75,17 +78,25 @@ export default function RootLayout() {
     prepareApp();
   }, [fontLoaded, fontError]);
 
+  // 폰트 로드 오류 발생 시 화면
   if (fontError) {
+    const errorTextColor = isDarkMode ? '#E0E0E0' : '#FF0000'; // 오류 텍스트 색상
     return (
-      <View style={loadingStyles.container}>
-        <Text style={loadingStyles.text}>폰트 로드 중 오류 발생: {fontError.message}</Text>
+      <View style={[loadingStyles.container, { backgroundColor: isDarkMode ? '#121212' : '#f2f2f2' }]}>
+        <Text style={[loadingStyles.text, { color: errorTextColor }]}>폰트 로드 중 오류 발생: {fontError.message}</Text>
       </View>
     );
   }
 
+  // 폰트 로드 및 초기 앱 준비 중 화면
   if (!fontLoaded || !appInitialLoadDone) {
     return <LoadingScreen />;
   }
+
+  // 다크 모드에 따른 헤더 색상 정의
+  const headerBackgroundColor = isDarkMode ? '#1F1F1F' : '#00D16E'; // 다크 모드 시 어두운 배경
+  const headerTintColor = isDarkMode ? '#E0E0E0' : '#fff'; // 다크 모드 시 밝은 텍스트/아이콘
+  const headerTitleColor = isDarkMode ? '#E0E0E0' : '#fff'; // 다크 모드 시 제목 텍스트
 
   return (
     // 직접 만드신 CustomThemeProvider로 앱 전체를 감싸줍니다.
@@ -94,13 +105,14 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerStyle: {
-              backgroundColor: '#00D16E',
+              backgroundColor: headerBackgroundColor, // 다크 모드에 따라 변경
             },
-            headerTintColor: '#fff',
+            headerTintColor: headerTintColor, // 다크 모드에 따라 변경
             headerTitleStyle: {
               fontWeight: 'bold',
+              color: headerTitleColor, // 다크 모드에 따라 변경
             },
-            headerBackTitle: '',
+            headerBackTitle: '', // 뒤로가기 버튼 텍스트 숨김
           }}
         >
           <Stack.Screen name="index" options={{ headerShown: false, title: '' }} />
@@ -114,7 +126,7 @@ export default function RootLayout() {
           <Stack.Screen name="+not-found" options={{ headerShown: false }} />
         </Stack>
       </AuthProvider>
-      <StatusBar style="auto" />
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} /> {/* 상태바 아이콘 색상도 다크 모드에 따라 변경 */}
     </CustomThemeProvider>
   );
 }

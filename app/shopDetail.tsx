@@ -1,10 +1,22 @@
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React from 'react';
 import { useTheme } from '@/context/ThemeContext'; // useTheme 훅 가져오기
+import { useLayoutEffect } from 'react';
+import { useNavigation } from 'expo-router';
 
 export default function ShopDetailScreen() {
   const { isDarkMode } = useTheme(); // isDarkMode 상태 가져오기
+  const navigation = useNavigation();
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: {
+        backgroundColor: '#FFFFFF', // 이 화면만 흰색 헤더
+      },
+      headerTintColor: '#000000',
+      headerTitle: '기부 상세', // 헤더 제목 변경
+    });
+  }, [navigation]);
   const handleDonate = () => {
     Alert.alert('기부되었습니다.');
   };

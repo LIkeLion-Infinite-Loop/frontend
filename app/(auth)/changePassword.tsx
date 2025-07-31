@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react'; // useLayoutEffect 추가
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native'; // useNavigation 가져오기
 import { useAuth } from '../../context/AuthContext';
 import { AppNavigationProp } from '../../types/navigation.d';
 import axios from 'axios';
@@ -28,7 +28,7 @@ export default function ChangePasswordScreen() {
   const { userToken } = useAuth();
   const { isDarkMode } = useTheme();
 
-  // 다크 모드에 따른 동적 스타일 변수 정의
+  // 다크 모드에 따른 동적 스타일 변수 정의 (화면 본문)
   const containerBackgroundColor = isDarkMode ? '#121212' : '#f2f2f2';
   const titleColor = isDarkMode ? '#E0E0E0' : '#000000';
   const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
@@ -36,6 +36,27 @@ export default function ChangePasswordScreen() {
   const inputFieldTextColor = isDarkMode ? '#E0E0E0' : '#333333';
   const buttonBackgroundColor = isDarkMode ? '#04c75a' : '#05D16E';
   const buttonTextColor = isDarkMode ? '#FFFFFF' : '#fff';
+  const placeholderTextColor = isDarkMode ? '#888888' : '#9FA6B2';
+
+  // useLayoutEffect를 사용하여 헤더 디자인을 동적으로 설정
+  useLayoutEffect(() => {
+    const headerBgColor = isDarkMode ? '#1F1F1F' : '#FFFFFF'; // 다크 모드 시 어둡게, 라이트 모드 시 흰색
+    const headerTint = isDarkMode ? '#E0E0E0' : '#000000'; // 뒤로가기 버튼 및 제목 색상
+    const headerTitleTxtColor = isDarkMode ? '#E0E0E0' : '#000000'; // 헤더 제목 텍스트 색상
+
+    navigation.setOptions({
+      title: '비밀번호 재설정', // 헤더 제목
+      headerStyle: {
+        backgroundColor: headerBgColor, // 동적 배경색
+      },
+      headerTintColor: headerTint, // 동적 틴트 색상
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        color: headerTitleTxtColor, // 동적 제목 텍스트 색상
+      },
+      headerBackTitle: '', // 뒤로가기 버튼 옆 텍스트 숨김
+    });
+  }, [navigation, isDarkMode]); // isDarkMode가 변경될 때마다 헤더 스타일 업데이트
 
   const validatePassword = () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
@@ -127,7 +148,7 @@ export default function ChangePasswordScreen() {
               color: inputFieldTextColor 
             }
         ]}
-        placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+        placeholderTextColor={placeholderTextColor}
       />
 
       <InputField
@@ -144,7 +165,7 @@ export default function ChangePasswordScreen() {
               color: inputFieldTextColor 
             }
         ]}
-        placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+        placeholderTextColor={placeholderTextColor}
       />
       
       {/* 새 비밀번호 확인 필드 추가 */}
@@ -162,7 +183,7 @@ export default function ChangePasswordScreen() {
               color: inputFieldTextColor 
             }
         ]}
-        placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+        placeholderTextColor={placeholderTextColor}
       />
 
       <TouchableOpacity
