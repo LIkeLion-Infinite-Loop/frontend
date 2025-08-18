@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import InputField from '../../components/InputField';
+// InputField 대신 TextInput을 직접 import 합니다.
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 import { useTheme } from '@/context/ThemeContext';
 
@@ -15,7 +15,7 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const { isDarkMode } = useTheme();
 
-  // 다크 모드에 따라 동적으로 스타일을 결정하는 변수
+  // --- 테마 관련 스타일 변수는 그대로 사용합니다 ---
   const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
   const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
   const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
@@ -25,6 +25,7 @@ export default function LoginScreen() {
   const linkSeparatorColor = isDarkMode ? '#777777' : '#999999';
   const passwordToggleColor = isDarkMode ? '#BBBBBB' : '#9FA6B2';
 
+  // --- 나머지 로직은 변경사항 없습니다 ---
   useEffect(() => {
     const loadRememberedEmail = async () => {
       try {
@@ -41,68 +42,53 @@ export default function LoginScreen() {
   }, []);
   
   const handleLogin = async () => {
-    if(!email || !password) {
+    if (!email || !password) {
       Alert.alert('입력 오류', '이메일과 비밀번호 모두 입력해주세요.');
       return;
     }
-
     try {
-      const response = await axios.post('http://40.233.103.122:8080/api/users/login' , {
-        email,
-        password,
-      });
+      const response = await axios.post('http://40.233.103.122:8080/api/users/login', { email, password });
       console.log('응답 데이터:', response.data);
 
-      if(response.status === 200 || response.status === 201) {
+      if (response.status === 200 || response.status === 201) {
         const token = response.data.access_token; 
         const refreshToken = response.data.refresh_token;
 
-        if(token && refreshToken) {
+        if (token && refreshToken) {
           await AsyncStorage.setItem('userToken', token);
           await AsyncStorage.setItem('refreshToken', refreshToken);
-
           if (response.data.email) {
             await AsyncStorage.setItem('userEmail', response.data.email);
           }
-
           if (rememberMe) {
             await AsyncStorage.setItem('rememberedEmail', email);
           } else {
             await AsyncStorage.removeItem('rememberedEmail');
           }
           Alert.alert('로그인 성공', '환영합니다!');
-
           await fetchUserInfo(token);
-
-          router.push('/(tabs)'); 
+          router.replace('/(tabs)'); // 로그인 후 뒤로가기 방지를 위해 push 대신 replace 사용
         } else {
           Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
-          console.error('로그인 실패: 토큰이 없습니다.');
         }
       } else {
         Alert.alert('로그인 실패', '예상치 못한 응답 상태 코드입니다.');
-        console.error('로그인 실패:', response.status);
       }
     } catch (error) {
       console.error('로그인 오류:', error);
-      Alert.alert('로그인 오류', error.response?.data?.message || '서버에 문제가 발생했습니다. 네트워크 상태를 확인하세요.');
+      Alert.alert('로그인 오류', error.response?.data?.message || '서버에 문제가 발생했습니다.');
     }
   };
 
   const fetchUserInfo = async (token) => {
     try {
       const response = await axios.get('http://40.233.103.122:8080/api/users/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (response.status === 200) {
         setUserInfo(response.data);
         await AsyncStorage.setItem('userInfo', JSON.stringify(response.data));
         console.log('내 정보 조회 성공:', response.data);
-      } else {
-        console.error('내 정보 조회 실패:', response.status);
       }
     } catch (error) {
       console.error('내 정보 조회 오류:', error);
@@ -111,57 +97,37 @@ export default function LoginScreen() {
     
   return (
     <View style={containerStyle}>
-      <Image
-        source={require('../../assets/images/gr_biugo.png')}
-        style={styles.logo}
-      />
+      <Image source={require('../../assets/images/gr_biugo.png')} style={styles.logo} />
 
       <View style={styles.form}>
-        <InputField 
+        {/* InputField를 TextInput으로 교체 */}
+        <TextInput 
           placeholder="이메일 또는 아이디" 
           value={email} 
           onChangeText={setEmail} 
-          style={[
-            styles.inputFieldCommon, 
-            { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
-          ]} 
+          style={[styles.inputFieldCommon, { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }]} 
           placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
 
         <View style={styles.passwordInputContainer}>
-          <InputField
+          {/* InputField를 TextInput으로 교체 */}
+          <TextInput
             placeholder="비밀번호"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword} 
-            style={[
-              styles.inputFieldCommon, 
-              styles.passwordInputFieldSpecific,
-              { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
-            ]} 
+            style={[styles.inputFieldCommon, styles.passwordInputFieldSpecific, { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }]} 
             placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
           />
-          <TouchableOpacity 
-            onPress={() => setShowPassword(!showPassword)} 
-            style={styles.togglePasswordVisibility}
-          >
-            <MaterialCommunityIcons 
-              name={showPassword ? 'eye-off' : 'eye'} 
-              size={24} 
-              color={passwordToggleColor}
-            />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.togglePasswordVisibility}>
+            <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={24} color={passwordToggleColor} />
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
-          onPress={() => setRememberMe(!rememberMe)} 
-          style={styles.rememberMeContainer}
-        >
-          <MaterialCommunityIcons 
-            name={rememberMe ? 'checkbox-marked' : 'checkbox-blank-outline'} 
-            size={20} 
-            color={isDarkMode ? '#04c75a' : '#05D16E'}
-          />
+        <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={styles.rememberMeContainer}>
+          <MaterialCommunityIcons name={rememberMe ? 'checkbox-marked' : 'checkbox-blank-outline'} size={20} color={isDarkMode ? '#04c75a' : '#05D16E'} />
           <Text style={[styles.rememberMeText, { color: rememberMeTextColor }]}>아이디 저장하기</Text>
         </TouchableOpacity> 
       </View>
@@ -175,15 +141,11 @@ export default function LoginScreen() {
         <TouchableOpacity onPress={() => router.push('/signup')} style={styles.linkBox}>
           <Text style={[styles.linkText, { color: linkTextColor }]}>가입하기</Text>
         </TouchableOpacity>
-        
-        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text> 
-
+        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text>
         <TouchableOpacity onPress={() => router.push('/findId')} style={styles.linkBox}>
           <Text style={[styles.linkText, { color: linkTextColor }]}>아이디 찾기</Text>
         </TouchableOpacity>
-
-        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text> 
-
+        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text>
         <TouchableOpacity onPress={() => router.push('/resetPassword')} style={styles.linkBox}>
           <Text style={[styles.linkText, { color: linkTextColor }]}>비밀번호 재설정</Text>
         </TouchableOpacity>
@@ -192,6 +154,7 @@ export default function LoginScreen() {
   );
 }
 
+// --- 스타일 시트는 변경사항 없습니다 ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -221,7 +184,7 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 16, 
     marginBottom: 20,
-    alignItems: 'center', // 추가: form 내부 요소들을 중앙 정렬
+    alignItems: 'center',
   },
   inputFieldCommon: {
     width: '100%', 
@@ -252,9 +215,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 5,
     marginBottom: 10,
-    // alignSelf: 'flex-start' 제거
-    width: '100%', // 추가
-    paddingHorizontal: 10, // 추가
+    width: '100%',
+    paddingHorizontal: 10,
   }, 
   rememberMeText: {
     marginLeft: 8,

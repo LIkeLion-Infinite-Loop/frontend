@@ -1,18 +1,17 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { useTheme } from '@/context/ThemeContext'; // ThemeContext import
+import { useTheme } from '@/context/ThemeContext';
 
 export default function TabLayout() {
-  const { isDarkMode } = useTheme(); // useTheme 훅으로 isDarkMode 상태 가져오기
+  const { isDarkMode } = useTheme();
 
-  // 다크 모드에 따른 동적 색상 정의
   const tabBarStyle = {
     height: 70, 
     paddingBottom: 10, 
-    backgroundColor: isDarkMode ? '#1F1F1F' : '#FAFAFA', // 다크 모드 시 어두운 배경색
+    backgroundColor: isDarkMode ? '#1F1F1F' : '#FAFAFA',
     borderTopWidth: StyleSheet.hairlineWidth, 
-    borderTopColor: isDarkMode ? '#333333' : '#E0E0E0', // 다크 모드 시 어두운 경계선
+    borderTopColor: isDarkMode ? '#333333' : '#E0E0E0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
@@ -22,7 +21,7 @@ export default function TabLayout() {
   
   const centerButtonBackgroundStyle = {
     ...styles.centerButtonBackground,
-    backgroundColor: isDarkMode ? '#04c75a' : '#06D16E', // 다크 모드 시 다른 버튼 색상
+    backgroundColor: isDarkMode ? '#04c75a' : '#06D16E',
   };
 
   const centerButtonIconColor = isDarkMode ? '#E0E0E0' : '#000000';
@@ -31,9 +30,9 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#06D16E',
-        tabBarInactiveTintColor: isDarkMode ? '#AAAAAA' : '#888888', // 다크 모드 시 비활성화 텍스트 색상
+        tabBarInactiveTintColor: isDarkMode ? '#AAAAAA' : '#888888',
         headerShown: false,
-        tabBarStyle: tabBarStyle, // 동적으로 정의한 tabBarStyle 적용
+        tabBarStyle: tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 12,
           marginBottom: 3, 
@@ -44,11 +43,12 @@ export default function TabLayout() {
         name="index" 
         options={{
           title: '홈', 
-          tabBarIcon: ({ color, focused }) => (
-            // focused 상태에 따라 아이콘 색상 변경
+          tabBarIcon: ({ color }) => (
+            // ✅ 수정: tintColor를 style 밖의 prop으로 이동
             <Image
               source={require('../../assets/images/home.png')} 
-              style={[styles.tabIcon, { tintColor: color }]} 
+              style={styles.tabIcon} 
+              tintColor={color}
             />
           ),
         }}
@@ -57,11 +57,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="help" 
         options={{
-          title: '가이드', 
-          tabBarIcon: ({ color, focused }) => (
+          title: '기록', 
+          tabBarIcon: ({ color }) => (
+            // ✅ 수정: tintColor를 style 밖의 prop으로 이동
             <Image
-              source={require('../../assets/images/help.png')} 
-              style={[styles.tabIcon, { tintColor: color }]}
+              source={require('../../assets/images/report.png')} 
+              style={styles.tabIcon}
+              tintColor={color}
             />
           ),
         }}
@@ -72,12 +74,14 @@ export default function TabLayout() {
         options={{
           title: '', 
           tabBarLabel: () => null, 
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: () => (
             <View style={styles.centerButtonContainer}>
               <View style={centerButtonBackgroundStyle}>
+                {/* ✅ 수정: tintColor를 style 밖의 prop으로 이동 */}
                 <Image
-                  source={require('../../assets/images/barcord.png')} 
-                  style={[styles.centerButtonIcon, { tintColor: centerButtonIconColor }]}
+                  source={require('../../assets/images/scan.png')} 
+                  style={styles.centerButtonIcon}
+                  tintColor={centerButtonIconColor}
                 />
               </View>
             </View>
@@ -89,10 +93,12 @@ export default function TabLayout() {
         name="shop"
         options={{
           title: '상점',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color }) => (
+            // ✅ 수정: tintColor를 style 밖의 prop으로 이동
             <Image
               source={require('../../assets/images/shop.png')} 
-              style={[styles.tabIcon, { tintColor: color }]}
+              style={styles.tabIcon}
+              tintColor={color}
             />
           ),
         }}
@@ -102,10 +108,12 @@ export default function TabLayout() {
         name="profile" 
         options={{
           title: '내 정보',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color }) => (
+            // ✅ 수정: tintColor를 style 밖의 prop으로 이동
             <Image
               source={require('../../assets/images/profile.png')} 
-              style={[styles.tabIcon, { tintColor: color }]}
+              style={styles.tabIcon}
+              tintColor={color}
             />
           ),
         }}

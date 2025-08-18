@@ -1,29 +1,25 @@
-// app/_layout.js
+// 파일: app/_layout.js
 
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+// View를 import 목록에 추가합니다.
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-
-// 직접 만드신 ThemeProvider를 가져옵니다.
 import { ThemeProvider as CustomThemeProvider } from '../context/ThemeContext'; 
-
 import { useFonts } from 'expo-font';
 import { AuthProvider } from '../context/AuthContext'; 
-import { useColorScheme } from '@/hooks/useColorScheme'; // 또는 'react-native'에서 가져온 useColorScheme
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 SplashScreen.preventAutoHideAsync();
 
-// 로딩 화면 컴포넌트
+// LoadingScreen 컴포넌트는 변경사항 없습니다.
 function LoadingScreen() {
-  // useColorScheme 훅을 여기서 사용하여 로딩 화면도 다크 모드 지원 가능
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-
   const containerBackgroundColor = isDarkMode ? '#121212' : '#f2f2f2';
   const textColor = isDarkMode ? '#E0E0E0' : '#333333';
-  const indicatorColor = isDarkMode ? '#04c75a' : '#06D16E'; // 다크 모드 시 약간 어둡게
+  const indicatorColor = isDarkMode ? '#04c75a' : '#06D16E';
 
   return (
     <View style={[loadingStyles.container, { backgroundColor: containerBackgroundColor }]}>
@@ -34,20 +30,13 @@ function LoadingScreen() {
 }
 
 const loadingStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    marginTop: 10,
-    fontSize: 16,
-  },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { marginTop: 10, fontSize: 16 },
 });
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme(); // 앱의 현재 테마를 가져옵니다.
-  const isDarkMode = colorScheme === 'dark'; // 현재 테마가 'dark'인지 확인합니다.
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   const [fontLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -59,28 +48,20 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepareApp() {
       try {
-        if (!fontLoaded && !fontError) {
-          return;
-        }
-
+        if (!fontLoaded && !fontError) return;
         await SplashScreen.hideAsync();
-        console.log('스플래시 화면 숨김');
-
         setAppInitialLoadDone(true);
-
       } catch (e) {
         console.warn('앱 초기화 중 오류 발생:', e);
         await SplashScreen.hideAsync();
         setAppInitialLoadDone(true);
       }
     }
-
     prepareApp();
   }, [fontLoaded, fontError]);
 
-  // 폰트 로드 오류 발생 시 화면
   if (fontError) {
-    const errorTextColor = isDarkMode ? '#E0E0E0' : '#FF0000'; // 오류 텍스트 색상
+    const errorTextColor = isDarkMode ? '#E0E0E0' : '#FF0000';
     return (
       <View style={[loadingStyles.container, { backgroundColor: isDarkMode ? '#121212' : '#f2f2f2' }]}>
         <Text style={[loadingStyles.text, { color: errorTextColor }]}>폰트 로드 중 오류 발생: {fontError.message}</Text>
@@ -88,45 +69,42 @@ export default function RootLayout() {
     );
   }
 
-  // 폰트 로드 및 초기 앱 준비 중 화면
   if (!fontLoaded || !appInitialLoadDone) {
     return <LoadingScreen />;
   }
 
-  // 다크 모드에 따른 헤더 색상 정의
-  const headerBackgroundColor = isDarkMode ? '#1F1F1F' : '#00D16E'; // 다크 모드 시 어두운 배경
-  const headerTintColor = isDarkMode ? '#E0E0E0' : '#fff'; // 다크 모드 시 밝은 텍스트/아이콘
-  const headerTitleColor = isDarkMode ? '#E0E0E0' : '#fff'; // 다크 모드 시 제목 텍스트
+  const headerBackgroundColor = isDarkMode ? '#1F1F1F' : '#00D16E';
+  const headerTintColor = isDarkMode ? '#E0E0E0' : '#fff';
+  const headerTitleColor = isDarkMode ? '#E0E0E0' : '#fff';
 
   return (
-    // 직접 만드신 CustomThemeProvider로 앱 전체를 감싸줍니다.
     <CustomThemeProvider> 
       <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: headerBackgroundColor, // 다크 모드에 따라 변경
-            },
-            headerTintColor: headerTintColor, // 다크 모드에 따라 변경
-            headerTitleStyle: {
-              fontWeight: 'bold',
-              color: headerTitleColor, // 다크 모드에 따라 변경
-            },
-            headerBackTitle: '', // 뒤로가기 버튼 텍스트 숨김
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false, title: '' }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false, title: ''}} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-
-          <Stack.Screen name="search" options={{ title: '검색 결과' }} />
-          <Stack.Screen name="scan-result/[barcode]" options={{ title: '스캔 결과' }} />
-
-          {/* 404 Not Found 화면 */}
-          <Stack.Screen name="+not-found" options={{ headerShown: false }} />
-        </Stack>
+        {/* ✅ 가장 중요한 수정사항입니다!
+          <Stack>과 <StatusBar>를 <View>로 감싸서 AuthProvider가
+          항상 단 하나의 자식만 갖도록 보장합니다.
+          이렇게 하면 컴포넌트 사이의 공백이 텍스트 노드로 인식되는
+          문제를 완벽하게 방지할 수 있습니다.
+        */}
+        <View style={{ flex: 1 }}>
+          <Stack
+            screenOptions={{
+              headerStyle: { backgroundColor: headerBackgroundColor },
+              headerTintColor: headerTintColor,
+              headerTitleStyle: { fontWeight: 'bold', color: headerTitleColor },
+              headerBackTitle: '',
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="search" options={{ title: '검색 결과' }} />
+            <Stack.Screen name="scan-result/[barcode]" options={{ title: '스캔 결과' }} />
+            <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+          </Stack>
+          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        </View>
       </AuthProvider>
-      <StatusBar style={isDarkMode ? 'light' : 'dark'} /> {/* 상태바 아이콘 색상도 다크 모드에 따라 변경 */}
     </CustomThemeProvider>
   );
 }
