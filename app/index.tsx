@@ -1,21 +1,67 @@
+import React, { useRef, useState } from 'react';
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function IntroScreen() {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1.1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start(() => {
+      router.push('/(auth)/login');
+    });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.logoGroup}>
         <Image source={require('../assets/images/earth.png')} style={styles.image} />
-        
-        <Image 
-          source={require('../assets/images/biugo.png')} 
-          style={{ width: 144, height: 48, resizeMode: 'contain' }} 
+
+        {/* 'resizeMode'를 style 밖의 prop으로 수정했습니다. */}
+        <Image
+          source={require('../assets/images/biugo.png')}
+          style={{ width: 144, height: 48 }}
+          resizeMode="contain"
         />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/login')}>
-        <Text style={styles.buttonText}>START</Text>
-      </TouchableOpacity>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onHoverIn={() => setIsHovered(true)}
+        onHoverOut={() => setIsHovered(false)}
+      >
+        <Animated.View
+          style={[
+            styles.button,
+            {
+              transform: [{ scale: scaleAnim }],
+              backgroundColor: isHovered ? '#04c75a' : '#FFFFFF',
+              opacity: isHovered ? 0.95 : 1,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              { color: isHovered ? '#e0ffe8' : '#05D16E' },
+            ]}
+          >
+            START
+          </Text>
+        </Animated.View>
+      </Pressable>
     </View>
   );
 }
@@ -23,9 +69,9 @@ export default function IntroScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#05D16E',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#06D16E',
     paddingHorizontal: 24,
   },
   logoGroup: {
@@ -40,14 +86,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: '#FFFFFF',
     paddingVertical: 16,
     paddingHorizontal: 60,
     borderRadius: 10,
     marginTop: 32,
   },
   buttonText: {
-    color: '#05D16E',
     fontSize: 18,
     fontWeight: 'bold',
   },

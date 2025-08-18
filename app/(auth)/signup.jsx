@@ -1,59 +1,43 @@
 import axios from 'axios';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import InputField from '../../components/InputField';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/context/ThemeContext'; // useTheme 훅 가져오기
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  // const [userId, setUserId] = useState(''); // 서버에서 사용하지 않으므로 주석 처리
   const [password, setPassword] = useState('');
+  const { isDarkMode } = useTheme(); // isDarkMode 상태 가져오기
 
-  /*
-  // <<<<<<< csy (상대방이 작성했던 원본 코드)
-  //   // ✅ 회원가입 처리
-  //   const handleSignup = async () => {
-  //     try {
-  //       const response = await axios.post('http://192.168.0.36:3000/register', {
-  //         email,
-  //         name,
-  //         password,
-  //       });
-  //
-  //       if (response.status === 201) {
-  //         Alert.alert('✅', '회원가입이 완료되었습니다.');
-  //         router.push('/login');
-  //       }
-  //     } catch (error) {
-  //       if (error.response?.status === 409) {
-  //         Alert.alert('⚠️', '이미 존재하는 이메일입니다.');
-  //       } else {
-  //         console.error(error);
-  //         Alert.alert('❌', '서버 오류가 발생했습니다.');
-  //       }
-  //     }
-  //   };
-  */
+  // 다크 모드에 따른 동적 스타일 변수 정의
+  const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
+  const titleColor = isDarkMode ? '#E0E0E0' : '#000000';
+  const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
+  const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
+  const inputFieldTextColor = isDarkMode ? '#E0E0E0' : '#333333';
 
-  // ✅ 회원가입 처리 함수 (충돌 해결 및 수정 완료)
   const handleSignUp = async () => {
     if (!name || !email || !password) {
       Alert.alert('입력 오류', '이름, 이메일, 비밀번호를 모두 입력해주세요.');
-      return;
+      return; // 여기서는 router.push('/login') 대신 return으로 함수를 종료하는 것이 좋습니다.
     }
 
     try {
-      // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
       const response = await axios.post('http://40.233.103.122:8080/api/users/signup', {
         email,
         name,
         password,
       });
 
-      if (response.status === 201) {
+      console.log('서버 응답 받음:', response.status);
+
+      if (response.status === 200 || response.status === 201) {
+        await AsyncStorage.setItem('user', JSON.stringify({ name, email }));
         Alert.alert('✅ 회원가입 성공', '로그인 페이지로 이동합니다.');
-        router.push('/login');
+        router.push('(auth)/login');
       }
     } catch (error) {
       if (error.response?.status === 409) {
@@ -65,32 +49,51 @@ export default function SignupScreen() {
     }
   };
 
-
-
-  const handleGoHome = () => router.push('/');
+  const handleGoHome = () => router.push('/login'); // 로그인 페이지로 이동
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>회원 가입</Text>
+    <View style={containerStyle}> {/* 다크 모드 배경색 적용 */}
+      <Text style={[styles.title, { color: titleColor }]}>회원 가입</Text> {/* 다크 모드 글자색 적용 */}
 
       <View style={styles.form}>
-        <Text style={styles.label}>이름</Text>
-        <InputField value={name} onChangeText={setName} placeholder="이름" />
+        <InputField 
+          value={name} 
+          onChangeText={setName} 
+          placeholder="이름" 
+          style={[
+            styles.inputFieldCommon,
+            { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
+          ]}
+          placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+        />
 
-        <Text style={styles.label}>이메일</Text>
-        <InputField value={email} onChangeText={setEmail} placeholder="이메일" keyboardType="email-address" />
+        <InputField 
+          value={email} 
+          onChangeText={setEmail} 
+          placeholder="이메일" 
+          keyboardType="email-address" 
+          style={[
+            styles.inputFieldCommon,
+            { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
+          ]}
+          placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+        />
 
-        <Text style={styles.label}>비밀번호</Text>
         <InputField
           value={password}
           onChangeText={setPassword}
           placeholder="비밀번호"
           secureTextEntry
+          style={[
+            styles.inputFieldCommon,
+            { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }
+          ]}
+          placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
         />
       </View>
 
-      <TouchableOpacity onPress={handleSignUp}>
-        <Text style={styles.signupButton}>가입하기</Text>
+      <TouchableOpacity onPress={handleSignUp} style={styles.signupButton}>
+        <Text style={styles.signupButtonText}>확인</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleGoHome} style={styles.homeButton}>
@@ -106,35 +109,65 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: '#F2F2F2', // 라이트 모드 배경색
     paddingHorizontal: 24,
     justifyContent: 'center',
+    alignItems: 'center', // 추가: 컨테이너 내부 요소 중앙 정렬
+  },
+  darkContainer: {
+    flex: 1,
+    backgroundColor: '#121212', // 다크 모드 배경색
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    alignItems: 'center', // 추가: 컨테이너 내부 요소 중앙 정렬
   },
   title: {
     textAlign: 'center',
     fontFamily: 'NotoSansKRRegular',
-    fontSize: 20,
-    color: '#05D16E',
-    marginBottom: 24,
+    fontSize: 25,
+    // color는 동적으로 설정
+    marginBottom: 130,
+    marginTop: -80,
   },
   form: {
     gap: 8,
+    width: '100%', // 추가: 폼 너비를 100%로 설정
+    alignItems: 'center', // 추가: 폼 내부 요소 중앙 정렬
   },
-  label: {
+  label: { // 이 스타일은 현재 사용되지 않는 것 같습니다.
     fontSize: 20,
     fontFamily: 'NotoSansKRRegular',
     marginBottom: 4,
     marginTop: 12,
   },
+  inputFieldCommon: {
+    width: '100%', // 인풋 필드 너비 100%
+    paddingHorizontal: 16, 
+    paddingVertical: 12, 
+    borderWidth: 1, 
+    fontSize: 16, 
+    fontFamily: 'NotoSansKRRegular', 
+    borderRadius: 8, // 둥근 모서리
+  },
   signupButton: {
-    fontSize: 20,
-    fontFamily: 'NotoSansKRRegular',
+    backgroundColor: '#05D16E',
+    paddingVertical: 12,
+    marginTop: 30,
+    marginBottom: 30,
+    borderRadius: 10, 
+    width: '50%', 
+    alignSelf: 'center'
+  },
+  signupButtonText: {
+    fontSize: 22,
+    color: '#fff',
     textAlign: 'center',
-    color: '#05D16E',
-    marginTop: 24,
-    marginBottom: 16,
+    fontFamily: 'NotoSansKRRegular',
   },
   homeButton: {
+    position: 'absolute',    
+    bottom: 80,                
+    alignSelf: 'center',        
     alignItems: 'center',
   },
   homeLogo: {

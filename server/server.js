@@ -4,7 +4,7 @@ const fs = require('fs'); // 파일 입출력
 const path = require('path'); // 경로 문제 해결
 
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
 // 미들웨어
 app.use(cors());
@@ -75,18 +75,21 @@ app.post('/login', (req, res) => {
 
 // ✅ 3. 아이디 찾기 API
 app.post('/api/users/find-id', (req, res) => {
-    const { name, email } = req.body;
-  
-    const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-    const user = db.users.find((u) => u.name === name && u.email === email);
-  
-    if (user) {
-      res.status(200).json({ user_id: user.id });
-    } else {
-      res.status(404).json({ message: '일치하는 사용자가 없습니다.' });
-    }
-  });
-  
+  // ✅ 요청 본문 확인 로그
+  console.log('📩 아이디 찾기 요청:', req.body);
+
+  const { name, email } = req.body;
+
+  const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+  const user = db.users.find((u) => u.name === name && u.email === email);
+
+  if (user) {
+    res.status(200).json({ user_id: user.id });
+  } else {
+    res.status(404).json({ message: '일치하는 사용자가 없습니다.' });
+  }
+});
+
 // 4. 비밀번호 재설정 API (/api/auth/reset-password)
 app.post('/api/auth/reset-password', (req, res) => {
     const { name, email } = req.body;
@@ -119,3 +122,5 @@ app.post('/api/auth/reset-password', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 로컬 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });
+
+console.log('📂 사용하는 DB 경로:', dbPath);

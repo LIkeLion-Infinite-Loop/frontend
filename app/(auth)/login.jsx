@@ -1,163 +1,271 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import InputField from '../../components/InputField';
+import React, { useState, useEffect } from 'react';
+// InputField 대신 TextInput을 직접 import 합니다.
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native'; 
+import { MaterialCommunityIcons } from '@expo/vector-icons'; 
+import { useTheme } from '@/context/ThemeContext';
 
 export default function LoginScreen() {
-  // ✅ 상태 관리
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userInfo, setUserInfo] = useState(null); 
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const { isDarkMode } = useTheme();
 
-  /*
-  // <<<<<<< csy (상대방이 작성했던 원본 코드)
-  //   // ✅ 로그인 처리 함수
-  //   const handleLogin = async () => {
-  //     console.log('입력된 이메일:', email);
-  //     console.log('입력된 비밀번호:', password);
-  //
-  //     try {
-  //       const response = await axios.post('http://192.168.0.36:3000/login', {
-  //         email,
-  //         password,
-  //       });
-  //
-  //       if (response.status === 200) {
-  //         Alert.alert('✅ 로그인 성공!');
-  //         router.push('/success');
-  //       }
-  //     } catch (err) {
-  //       console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
-  //       Alert.alert(
-  //         '❌ 로그인 실패',
-  //         err.response?.data?.message || '서버와의 연결에 실패했습니다.'
-  //       );
-  //     }
-  //   };
-  */
+  // --- 테마 관련 스타일 변수는 그대로 사용합니다 ---
+  const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
+  const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
+  const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
+  const inputFieldTextColor = isDarkMode ? '#E0E0E0' : '#333333';
+  const rememberMeTextColor = isDarkMode ? '#BBBBBB' : '#666666';
+  const linkTextColor = isDarkMode ? '#AAAAAA' : '#666666';
+  const linkSeparatorColor = isDarkMode ? '#777777' : '#999999';
+  const passwordToggleColor = isDarkMode ? '#BBBBBB' : '#9FA6B2';
 
-  // ✅ 로그인 처리 함수 (충돌 해결 및 수정 완료)
+  // --- 나머지 로직은 변경사항 없습니다 ---
+  useEffect(() => {
+    const loadRememberedEmail = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem('rememberedEmail');
+        if (savedEmail) {
+          setEmail(savedEmail);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.error('저장된 이메일 불러오기 오류:', error);
+      }
+    };
+    loadRememberedEmail();
+  }, []);
+  
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
+      Alert.alert('입력 오류', '이메일과 비밀번호 모두 입력해주세요.');
       return;
     }
-
     try {
-      // ❗️서버 주소는 실제 서버를 실행 중인 컴퓨터의 내부 IP로 변경해야 합니다.
-      const response = await axios.post('http://40.233.103.122:8080/login', {
 
-        email,
-        password,
-      });
+      const response = await axios.post('http://40.233.103.122:8080/api/users/login', { email, password });
+      console.log('응답 데이터:', response.data);
 
-      if (response.status === 200) {
-        Alert.alert('✅ 로그인 성공!');
-        // ✅ 로그인 성공 후 이동할 화면 경로를 확인하세요. (예: '/(tabs)')
-        router.push('/(tabs)');
+      if (response.status === 200 || response.status === 201) {
+        const token = response.data.access_token; 
+        const refreshToken = response.data.refresh_token;
+
+        if (token && refreshToken) {
+          await AsyncStorage.setItem('userToken', token);
+          await AsyncStorage.setItem('refreshToken', refreshToken);
+          if (response.data.email) {
+            await AsyncStorage.setItem('userEmail', response.data.email);
+          }
+          if (rememberMe) {
+            await AsyncStorage.setItem('rememberedEmail', email);
+          } else {
+            await AsyncStorage.removeItem('rememberedEmail');
+          }
+          Alert.alert('로그인 성공', '환영합니다!');
+          await fetchUserInfo(token);
+          router.replace('/(tabs)'); // 로그인 후 뒤로가기 방지를 위해 push 대신 replace 사용
+        } else {
+          Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
+        }
+      } else {
+        Alert.alert('로그인 실패', '예상치 못한 응답 상태 코드입니다.');
       }
-    } catch (err) {
-      console.error('로그인 오류:', err); // ❗️콘솔에서 에러 확인
-      Alert.alert(
-        '❌ 로그인 실패',
-        err.response?.data?.message || '서버와의 연결에 실패했습니다.'
-      );
+    } catch (error) {
+      console.error('로그인 오류:', error);
+      Alert.alert('로그인 오류', error.response?.data?.message || '서버에 문제가 발생했습니다.');
     }
   };
 
-
+  const fetchUserInfo = async (token) => {
+    try {
+      const response = await axios.get('http://40.233.103.122:8080/api/users/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 200) {
+        setUserInfo(response.data);
+        await AsyncStorage.setItem('userInfo', JSON.stringify(response.data));
+        console.log('내 정보 조회 성공:', response.data);
+      }
+    } catch (error) {
+      console.error('내 정보 조회 오류:', error);
+    }
+  };
+    
   return (
-    <View style={styles.container}>
-      {/* 상단 로고 */}
-      <Image
-        source={require('../../assets/images/gr_biugo.png')}
-        style={styles.logo}
-      />
+    <View style={containerStyle}>
+      <Image source={require('../../assets/images/gr_biugo.png')} style={styles.logo} />
 
-      {/* 이메일, 비밀번호 입력 */}
       <View style={styles.form}>
-        <Text style={styles.label}>아이디</Text>
-        <InputField placeholder="이메일 또는 아이디" value={email} onChangeText={setEmail} />
-
-        <Text style={styles.label}>비밀번호</Text>
-        <InputField
-          placeholder="비밀번호"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
+        {/* InputField를 TextInput으로 교체 */}
+        <TextInput 
+          placeholder="이메일 또는 아이디" 
+          value={email} 
+          onChangeText={setEmail} 
+          style={[styles.inputFieldCommon, { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }]} 
+          placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
+
+        <View style={styles.passwordInputContainer}>
+          {/* InputField를 TextInput으로 교체 */}
+          <TextInput
+            placeholder="비밀번호"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword} 
+            style={[styles.inputFieldCommon, styles.passwordInputFieldSpecific, { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }]} 
+            placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.togglePasswordVisibility}>
+            <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={24} color={passwordToggleColor} />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={styles.rememberMeContainer}>
+          <MaterialCommunityIcons name={rememberMe ? 'checkbox-marked' : 'checkbox-blank-outline'} size={20} color={isDarkMode ? '#04c75a' : '#05D16E'} />
+          <Text style={[styles.rememberMeText, { color: rememberMeTextColor }]}>아이디 저장하기</Text>
+        </TouchableOpacity> 
       </View>
 
-      {/* 로그인 버튼 */}
       <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
         <Image source={require('../../assets/images/earth.png')} style={styles.earth} />
-        <Text style={styles.loginText}>로그인</Text>
+        <Text style={styles.loginButtonText}>로그인</Text>
       </TouchableOpacity>
 
-      {/* 하단 링크 */}
-      <View style={styles.links}>
-        <TouchableOpacity onPress={() => router.push('/signup')}>
-          <Text style={styles.linkText}>가입하기</Text>
+      <View style={styles.linksRow}>
+        <TouchableOpacity onPress={() => router.push('/signup')} style={styles.linkBox}>
+          <Text style={[styles.linkText, { color: linkTextColor }]}>가입하기</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/findId')}>
-          <Text style={styles.linkText}>아이디 찾기</Text>
+        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text>
+        <TouchableOpacity onPress={() => router.push('/findId')} style={styles.linkBox}>
+          <Text style={[styles.linkText, { color: linkTextColor }]}>아이디 찾기</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/resetPassword')}>
-          <Text style={styles.linkText}>비밀번호 재설정</Text>
+        <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text>
+        <TouchableOpacity onPress={() => router.push('/resetPassword')} style={styles.linkBox}>
+          <Text style={[styles.linkText, { color: linkTextColor }]}>비밀번호 재설정</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
+// --- 스타일 시트는 변경사항 없습니다 ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F2',
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    justifyContent: 'space-between', 
     alignItems: 'center',
+    paddingTop: 80, 
+    paddingBottom: 50, 
+  },
+  darkContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
+    paddingHorizontal: 24,
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingTop: 80, 
+    paddingBottom: 50, 
   },
   logo: {
-    width: 160,
-    height: 48,
+    width: 260, 
+    height: 200, 
     resizeMode: 'contain',
-    marginBottom: 32,
+    marginTop: 30 
   },
   form: {
     width: '100%',
+    gap: 16, 
+    marginBottom: 20,
+    alignItems: 'center',
   },
-  label: {
-    fontSize: 20,
+  inputFieldCommon: {
+    width: '100%', 
+    paddingHorizontal: 16, 
+    paddingVertical: 12, 
+    borderWidth: 1, 
+    fontSize: 16, 
+    fontFamily: 'NotoSansKRRegular', 
+    borderRadius: 8,
+  },
+  passwordInputContainer: {
+    position: 'relative', 
+    width: '100%', 
+  },
+  passwordInputFieldSpecific: {
+    paddingRight: 50, 
+  },
+  togglePasswordVisibility: {
+    position: 'absolute',
+    right: 15, 
+    top: '50%', 
+    transform: [{ translateY: -12 }],
+    padding: 5, 
+    zIndex: 1, 
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    marginBottom: 10,
+    width: '100%',
+    paddingHorizontal: 10,
+  }, 
+  rememberMeText: {
+    marginLeft: 8,
+    fontSize: 14,
     fontFamily: 'NotoSansKRRegular',
-    marginBottom: 8,
-    marginTop: 16,
   },
   loginButton: {
-    marginTop: 24,
+    backgroundColor: '#05D16E', 
+    paddingVertical: 15, 
+    borderRadius: 10, 
+    width: '50%', 
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative', 
+    overflow: 'hidden', 
+    marginBottom: 30, 
   },
   earth: {
-    width: 160,
-    height: 160,
+    width: '100%', 
+    height: 120, 
     resizeMode: 'contain',
-    opacity: 0.1,
+    opacity: 0.1, 
+    position: 'absolute', 
   },
-  loginText: {
-    position: 'absolute',
-    fontSize: 20,
+  loginButtonText: {
+    fontSize: 22, 
     fontFamily: 'NotoSansKRRegular',
-    color: '#05D16E',
+    color: '#FFFFFF', 
+    fontWeight: 'bold', 
+    zIndex: 1, 
   },
-  links: {
-    marginTop: 32,
-    gap: 12,
+  linksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly', 
+    alignItems: 'center',
+    width: '100%', 
+    marginTop: 20, 
+  },
+  linkBox: {
+    alignItems: 'center',
+    paddingHorizontal: 5, 
   },
   linkText: {
-    textAlign: 'center',
-    fontSize: 20,
+    fontSize: 14, 
     fontFamily: 'NotoSansKRRegular',
-    color: '#05D16E',
+  },
+  linkSeparator: {
+    fontSize: 14,
+    marginHorizontal: 5, 
   },
 });

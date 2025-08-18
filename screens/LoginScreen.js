@@ -1,5 +1,4 @@
-// screens/LoginScreen.js
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { login } from '../api/auth';
 import InputField from '../components/InputField';
@@ -19,7 +18,6 @@ export default function LoginScreen() {
       const res = await login(email, password);
       console.log('✅ 로그인 성공:', res.accessToken);
       Alert.alert('로그인 성공', 'AccessToken: ' + res.accessToken);
-      // TODO: SecureStore에 저장하고 화면 이동
     } catch (err) {
       console.log('❌ 로그인 실패:', err.response?.data || err.message);
       Alert.alert('로그인 실패', err.response?.data?.message || '이메일 또는 비밀번호가 올바르지 않습니다.');
