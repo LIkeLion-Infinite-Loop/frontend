@@ -7,23 +7,28 @@
     "icon": "./assets/images/icon.png",
     "scheme": "biugo",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/images/earth-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#05D16E"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.biugo", 
+      "bundleIdentifier": "com.while.biugo",
       "infoPlist": {
-        "NSCameraUsageDescription": "이 앱은 바코드 및 QR 코드 스캔을 위해 카메라 접근 권한이 필요합니다."
-      } 
+        "NSCameraUsageDescription": "영수증 촬영을 위해 카메라 접근 권한이 필요합니다."
+      }
     },
     "android": {
-      "package": "com.yourcompany.biugo",
+      "package": "com.while.biugo",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/earth-logo.png",
+        "backgroundColor": "#05D16E"
       },
+      "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.CAMERA"
+        "CAMERA"
       ]
     },
     "web": {
@@ -33,16 +38,7 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
-      "expo-barcode-scanner"
+      "expo-camera"
     ],
     "experiments": {
       "typedRoutes": true
