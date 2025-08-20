@@ -2,25 +2,22 @@ import axios from 'axios';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import InputField from '../../components/InputField'; // 커스텀 인풋 필드 컴포넌트
-import { useTheme } from '@/context/ThemeContext'; // useTheme 훅 가져오기
+import InputField from '../../components/InputField'; 
+import { useTheme } from '@/context/ThemeContext'; 
 
 export default function SetNewPassword() {
-  // 입력된 비밀번호와 확인값 상태 관리
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const { isDarkMode } = useTheme(); // isDarkMode 상태 가져오기
 
-  // 다크 모드에 따른 동적 스타일 변수 정의
   const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
   const titleColor = isDarkMode ? '#E0E0E0' : '#05D16E';
   const labelColor = isDarkMode ? '#BBBBBB' : '#000000'; // 라벨 색상
   const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
   const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
   const inputFieldTextColor = isDarkMode ? '#E0E0E0' : '#333333';
-  const submitButtonTextColor = isDarkMode ? '#04c75a' : '#05D16E'; // '변경하기' 버튼 텍스트 색상
+  const submitButtonTextColor = isDarkMode ? '#04c75a' : '#05D16E';
 
-  // ✅ 비밀번호 재설정 요청 함수
   const handleReset = async () => {
     // 비밀번호 불일치 확인
     if (password !== confirm) {
@@ -52,13 +49,12 @@ export default function SetNewPassword() {
     }
   };
 
-  // ✅ 홈(인트로) 화면으로 이동
   const goHome = () => {
     router.push('/');
   };
 
   return (
-    <View style={containerStyle}> {/* 다크 모드 배경색 적용 */}
+    <View style={containerStyle}> 
       <Text style={[styles.title, { color: titleColor }]}>비밀번호 재설정</Text> {/* 다크 모드 글자색 적용 */}
 
       {/* 입력 폼 */}

@@ -14,8 +14,7 @@ import axios from 'axios';
 import InputField from '../../components/InputField';
 import { useTheme } from '@/context/ThemeContext';
 
-// API 기본 URL을 상수로 정의하여 유지보수 용이성을 높입니다.
-// 중요: 프로덕션 환경에서는 반드시 'https'를 사용해야 합니다.
+
 const API_BASE_URL = 'http://40.233.103.122:8080/api';
 
 export default function ChangePasswordScreen() {

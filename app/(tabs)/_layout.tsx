@@ -56,9 +56,9 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="help" 
-        options={{
-          title: '기록', 
+        name="quiz" 
+        options={{ 
+          title: '퀴즈', 
           tabBarIcon: ({ color }) => (
             // ✅ 수정: tintColor를 style 밖의 prop으로 이동
             <Image
@@ -67,7 +67,7 @@ export default function TabLayout() {
               tintColor={color}
             />
           ),
-        }}
+        }} 
       />
 
       <Tabs.Screen

@@ -7,13 +7,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '@/context/ThemeContext'; // useTheme 훅 가져오기
 
 export default function FindIdScreen() {
-  const { userToken } = useAuth(); // userToken은 AuthContext에서 가져옴
+  const { userToken } = useAuth(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [foundId, setFoundId] = useState('');
-  const { isDarkMode } = useTheme(); // isDarkMode 상태 가져오기
+  const { isDarkMode } = useTheme(); 
 
-  // 다크 모드에 따른 동적 스타일 변수 정의
   const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
   const titleColor = isDarkMode ? '#E0E0E0' : '#000000';
   const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
@@ -28,9 +27,6 @@ export default function FindIdScreen() {
         return Alert.alert('⚠️', '이름과 이메일을 모두 입력해주세요.');
       }
 
-      // userToken이 필요 없는 API 호출이라면 헤더에서 제거하거나,
-      // userToken이 없을 경우에도 호출되도록 로직을 수정해야 합니다.
-      // 현재 아이디 찾기 API는 인증이 필요 없을 수 있으므로, userToken이 null일 경우 헤더를 보내지 않도록 수정합니다.
       const headers = userToken ? { Authorization: `Bearer ${userToken}` } : {};
 
       const response = await axios.post('http://40.233.103.122:8080/api/users/find-id',
