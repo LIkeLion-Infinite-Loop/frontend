@@ -1,33 +1,36 @@
-// app/(tabs)/receiptScan.tsx
-
 import { useIsFocused } from '@react-navigation/native';
-import { Camera, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
-import React, { useRef } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
 export default function ReceiptScanScreen() {
-  const cameraRef = useRef<Camera | null>(null);
+  const cameraRef = useRef<CameraView | null>(null);
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
+  const [busy, setBusy] = useState(false);
 
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({ base64: true });
-        console.log('📸 촬영 성공:', photo.uri);
-        Alert.alert('촬영 완료', photo.uri);
-        router.push('/receiptResult'); // 👉 결과 화면 이동
-      } catch (error) {
-        console.error('📸 촬영 실패:', error);
-        Alert.alert('촬영 오류', '문제가 발생했습니다.');
-      }
-    }
-  };
-
-  if (!permission?.granted) {
+  if (!permission) {
     return (
-      <View style={styles.permissionContainer}>
+      <View style={styles.center}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 10 }}>권한 상태 확인 중…</Text>
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.center}>
         <Text style={styles.permissionText}>카메라 권한이 필요합니다.</Text>
         <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
           <Text style={styles.permissionButtonText}>권한 요청</Text>
@@ -36,23 +39,52 @@ export default function ReceiptScanScreen() {
     );
   }
 
+  const onCapture = async () => {
+    try {
+      setBusy(true);
+
+      // 실제 촬영은 하되 결과는 사용하지 않음(디자인 데모용)
+      await cameraRef.current?.takePictureAsync();
+
+      // 데모용 인식 결과(예시 데이터)와 함께 결과 화면으로 이동
+      const demoItems = [
+        { name: '펩시 제로 콜라 355ml', quantity: 1, material: 'CAN' },
+        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
+        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
+        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
+      ];
+
+      router.push({
+        pathname: '/scanResult',
+        params: { data: JSON.stringify(demoItems) },
+      });
+    } catch (e) {
+      console.error('📸 촬영 실패:', e);
+      Alert.alert('촬영 오류', '문제가 발생했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {isFocused && (
-        <Camera
+        <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
-          type={CameraType.back}
-          ratio="16:9"
+          facing="back"
+          autofocus="on"
         >
           <View style={styles.guideBox} />
-          <Text style={styles.guideText}>박스 안에 맞춰 영수증을 찍어주세요</Text>
-        </Camera>
+          <View style={styles.captionWrap}>
+            <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
+          </View>
+        </CameraView>
       )}
 
       <View style={styles.controls}>
-        <TouchableOpacity onPress={takePicture} style={styles.captureButton}>
-          <Text style={styles.captureText}>촬영</Text>
+        <TouchableOpacity onPress={onCapture} style={styles.captureButton} disabled={busy}>
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.captureText}>촬영</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -60,60 +92,39 @@ export default function ReceiptScanScreen() {
 }
 
 const styles = StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   container: { flex: 1, position: 'relative', backgroundColor: '#000' },
+
   guideBox: {
     position: 'absolute',
-    top: '20%',
-    left: '10%',
-    right: '10%',
-    height: '60%',
-    borderWidth: 2,
+    top: `${GUIDE.topPct * 100}%`,
+    left: `${GUIDE.sidePct * 100}%`,
+    right: `${GUIDE.sidePct * 100}%`,
+    height: `${GUIDE.heightPct * 100}%`,
     borderColor: '#00FF00',
+    borderWidth: 2,
     borderRadius: 8,
   },
-  guideText: {
-    position: 'absolute',
-    bottom: 120,
-    width: '100%',
-    textAlign: 'center',
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  controls: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
+  captionWrap: { position: 'absolute', bottom: '16%', width: '100%', alignItems: 'center' },
+  caption: { color: '#fff', fontSize: 14, fontWeight: '500', opacity: 0.9 },
+
+  controls: { position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' },
   captureButton: {
     backgroundColor: '#06D16E',
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 30,
-  },
-  captureText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    minWidth: 120,
     alignItems: 'center',
   },
-  permissionText: {
-    fontSize: 16,
-    marginBottom: 20,
-  },
+  captureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  permissionText: { fontSize: 16, marginBottom: 16 },
   permissionButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     backgroundColor: '#06D16E',
-    padding: 12,
-    borderRadius: 10,
+    borderRadius: 20,
   },
-  permissionButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  permissionButtonText: { color: '#fff', fontWeight: 'bold' },
 });
