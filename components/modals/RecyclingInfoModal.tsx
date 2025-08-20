@@ -128,7 +128,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
-  itemDescription: {
+  // 새로운 스타일 추가: 상세 정보 텍스트
+  itemDetailText: {
     fontSize: 14,
     lineHeight: 20, // 가독성을 위해 줄 간격 조정
   },
@@ -142,6 +143,12 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: 'bold',
   },
+  // 새로운 스타일 추가: 라벨 텍스트
+  detailLabel: {
+    fontWeight: 'bold', // 라벨을 더 강조
+    color: '#333', // 라벨 색상을 조금 더 진하게
+  },
+  // 기존 itemDescription 스타일은 더 이상 직접 사용되지 않지만, 필요에 따라 itemDetailText에 통합했습니다.
 });
 
 export default RecyclingInfoModal;

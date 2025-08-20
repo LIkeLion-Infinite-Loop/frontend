@@ -32,6 +32,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#06D16E',
         tabBarInactiveTintColor: isDarkMode ? '#AAAAAA' : '#888888',
         headerShown: false,
+
         tabBarStyle: tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 12,

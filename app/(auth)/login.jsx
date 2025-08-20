@@ -47,6 +47,7 @@ export default function LoginScreen() {
       return;
     }
     try {
+
       const response = await axios.post('http://40.233.103.122:8080/api/users/login', { email, password });
       console.log('응답 데이터:', response.data);
 

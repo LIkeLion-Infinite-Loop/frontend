@@ -41,6 +41,7 @@ const SearchInput: React.FC<SearchInputProps> = ({ placeholder = "재활용품�
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
         value={searchText}
+
         onChangeText={setSearchText}
         onSubmitEditing={handleSearch}
         returnKeyType="search"

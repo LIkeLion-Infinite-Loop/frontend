@@ -26,6 +26,8 @@
         "foregroundImage": "./assets/images/earth-logo.png",
         "backgroundColor": "#05D16E"
       },
+      
+      "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA"

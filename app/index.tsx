@@ -27,6 +27,7 @@ export default function IntroScreen() {
     <View style={styles.container}>
       <View style={styles.logoGroup}>
         <Image source={require('../assets/images/earth.png')} style={styles.image} />
+
         {/* 'resizeMode'를 style 밖의 prop으로 수정했습니다. */}
         <Image
           source={require('../assets/images/biugo.png')}
