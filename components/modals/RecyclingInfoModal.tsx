@@ -1,13 +1,12 @@
-import { CategoryData } from '@/constants/recyclingData';
 import { Image } from 'expo-image';
 import React from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View, Dimensions } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View, Dimensions, ScrollView } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 
 interface RecyclingInfoModalProps {
   isVisible: boolean;
   onClose: () => void;
-  categoryData: CategoryData | null;
+  categoryData: any | null;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -24,7 +23,37 @@ const RecyclingInfoModal: React.FC<RecyclingInfoModalProps> = ({ isVisible, onCl
   const itemNameColor = isDarkMode ? '#E0E0E0' : 'black';
   const itemDescriptionColor = isDarkMode ? '#AAAAAA' : '#555';
   const dividerColor = isDarkMode ? '#444444' : '#E0E0E0';
-  const itemDividerColor = isDarkMode ? '#333333' : '#ccc'; // 아이템 구분선 색상 추가
+
+
+  const renderContent = () => {
+    return (
+      <ScrollView style={styles.contentScrollView}>
+        {categoryData.mainImage && (
+          <Image
+            source={categoryData.mainImage}
+            style={styles.mainInfoImage}
+            contentFit="contain"
+          />
+        )}
+        
+        {categoryData.items?.map((item: any, index: number) => (
+          <View key={index} style={styles.itemRow}>
+            <Image 
+              source={item.icon}
+              style={styles.itemIcon} 
+              contentFit="contain" 
+            />
+            <View style={styles.itemTextContainer}>
+              <Text style={[styles.itemName, { color: itemNameColor }]}>{item.name}</Text>
+              <Text style={[styles.itemDetailText, { color: itemDescriptionColor }]}>
+                {item.description}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    );
+  };
 
   return (
     <Modal
@@ -35,37 +64,20 @@ const RecyclingInfoModal: React.FC<RecyclingInfoModalProps> = ({ isVisible, onCl
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.modalContainer, { backgroundColor: modalContainerBackgroundColor }]}>
-          <Text style={[styles.title, { color: titleColor }]}>[{categoryData.koreanName}] 항목별 재활용법</Text>
+          <Text style={[styles.title, { color: titleColor }]}>[{categoryData.koreaName || categoryData.koreanName}] 항목별 재활용법</Text>
           <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
-          <FlatList
-            data={categoryData.items}
-            keyExtractor={(item) => item.name}
-            renderItem={({ item, index }) => (
-              <View style={[
-                styles.itemRow,
-                index === categoryData.items.length - 1 ? {} : { borderBottomColor: itemDividerColor }
-              ]}>
-                <Image source={item.icon} style={styles.itemIcon} />
-                <View style={styles.itemTextContainer}>
-                  <Text style={[styles.itemName, { color: itemNameColor }]}>{item.name}</Text>
-                  <Text style={[styles.itemDetailText, { color: itemDescriptionColor }]}>
-                    {item.description}
-                  </Text>
-                </View>
-              </View>
-            )}
-            contentContainerStyle={styles.flatListContent}
-          />
+          {renderContent()}
 
           <Pressable style={[styles.closeButton, { backgroundColor: isDarkMode ? '#444444' : '#f0f0f0' }]} onPress={onClose}>
-              <Text style={[styles.closeButtonText, { color: isDarkMode ? '#E0E0E0' : '#555' }]}>닫기</Text>
+            <Text style={[styles.closeButtonText, { color: isDarkMode ? '#E0E0E0' : '#555' }]}>닫기</Text>
           </Pressable>
         </Pressable>
       </Pressable>
     </Modal>
   );
 };
+
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -78,7 +90,8 @@ const styles = StyleSheet.create({
     width: width * 0.9,
     maxHeight: height * 0.8,
     borderRadius: 20,
-    padding: 25,
+    paddingHorizontal: 25, // 좌우 패딩
+    paddingVertical: 20,   // 상하 패딩
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -94,21 +107,27 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     width: '100%',
-    marginBottom: 10, // 간격 살짝 조정
+    marginBottom: 15,
   },
-  flatListContent: {
-    paddingBottom: 10, // 하단 패딩 추가
+  contentScrollView: {
+    flexShrink: 1, // 내용이 많아도 모달 크기를 넘어가지 않도록 설정
+  },
+  mainInfoImage: {
+    width: '100%',
+    aspectRatio: 1.5, // 이미지 비율
+    borderRadius: 10,
+    marginBottom: 20, // 이미지와 설명 사이 간격
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 15, // 상하 패딩으로 변경
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 15, // 각 아이템 설명 사이 간격
   },
   itemIcon: {
-    width: 40, // 아이콘 크기 살짝 조정
+    width: 40,
     height: 40,
     marginRight: 15,
+    marginTop: 5, // 아이콘과 텍스트 상단 정렬을 위한 미세조정
   },
   itemTextContainer: {
     flex: 1,
@@ -116,22 +135,22 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 5, // 간격 살짝 조정
+    marginBottom: 5,
   },
   itemDetailText: {
     fontSize: 14,
-    lineHeight: 21, // 줄 간격 1.5배로 조정
+    lineHeight: 21,
   },
   closeButton: {
-      marginTop: 20, // 상단 간격 추가
-      paddingVertical: 12, // 버튼 크기 조정
-      paddingHorizontal: 20,
-      borderRadius: 10,
-      alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   closeButtonText: {
-      fontSize: 16,
-      fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

@@ -1,4 +1,4 @@
-import { Image } from 'react-native'; 
+import { Image } from 'expo-image'; 
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
@@ -9,13 +9,11 @@ interface CategoryItemProps {
   koreanName: string;
   icon: any; 
   onPress: (categoryName: string) => void;
-  style?: ViewStyle; // CategoryGrid에서 넘겨받을 style prop 추가
+  style?: ViewStyle;
 }
 
 const CategoryItem: React.FC<CategoryItemProps> = ({ name, koreanName, icon, onPress, style }) => {
   const { isDarkMode } = useTheme(); 
-  
-  // reanimated를 사용해 애니메이션 값을 관리
   const scale = useSharedValue(1);
 
   const handlePressIn = () => {
@@ -47,12 +45,12 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ name, koreanName, icon, onP
       onPressOut={handlePressOut}
       onPress={handlePress}
       activeOpacity={1}
-      style={{ margin: 5 }} // CategoryItem의 마진을 여기서 관리
+      style={{ margin: 5 }}
     >
       <Animated.View
         style={[
           styles.container, 
-          style, // CategoryGrid에서 넘어온 동적 크기 스타일 적용
+          style,
           { 
             backgroundColor: containerBackgroundColor,
             borderColor: containerBorderColor,
@@ -65,10 +63,11 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ name, koreanName, icon, onP
           animatedStyle,
         ]} 
       >
+        {/* ⭐️ 이 부분을 수정했습니다. {uri:...} 래퍼를 제거했습니다. */}
         <Image
           source={icon}
           style={styles.icon}
-          resizeMode="contain"
+          contentFit="contain"
         />
         <Text style={[styles.name, { color: nameColor }]}>{koreanName}</Text>
       </Animated.View>
@@ -76,15 +75,14 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ name, koreanName, icon, onP
   );
 };
 
+// ... styles는 이전과 동일 ...
 const styles = StyleSheet.create({
   container: {
-    // width: '30%', -> 이 값은 CategoryGrid에서 동적으로 계산
     aspectRatio: 1, 
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
     padding: 5,
-    // margin: 5, -> 이 값은 TouchableOpacity에서 관리
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -94,7 +92,6 @@ const styles = StyleSheet.create({
   icon: {
     width: '85%', 
     height: '85%',
-    resizeMode: 'contain',
     marginBottom: 5,
   },
   name: {
@@ -104,5 +101,6 @@ const styles = StyleSheet.create({
     fontFamily: 'NotoSansKRBold'
   },
 });
+
 
 export default CategoryItem;
