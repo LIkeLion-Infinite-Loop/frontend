@@ -12,35 +12,22 @@
       "resizeMode": "contain",
       "backgroundColor": "#05D16E"
     },
-    "splash": {
-      "image": "./assets/images/earth-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#05D16E"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.while.biugo",
-      "bundleIdentifier": "com.while.biugo",
       "infoPlist": {
-        "NSCameraUsageDescription": "영수증 촬영을 위해 카메라 접근 권한이 필요합니다."
-      }
         "NSCameraUsageDescription": "영수증 촬영을 위해 카메라 접근 권한이 필요합니다."
       }
     },
     "android": {
       "package": "com.while.biugo",
-      "package": "com.while.biugo",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/earth-logo.png",
-        "backgroundColor": "#05D16E"
         "foregroundImage": "./assets/images/earth-logo.png",
         "backgroundColor": "#05D16E"
       },
       "usesCleartextTraffic": true,
-      "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "CAMERA"
         "CAMERA"
       ]
     },
@@ -51,7 +38,6 @@
     },
     "plugins": [
       "expo-router",
-      "expo-camera"
       "expo-camera"
     ],
     "experiments": {
