@@ -3,11 +3,17 @@
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    }
+    "paths": { "@/*": ["./*"] },
+
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+
+    "moduleResolution": "bundler",        // ✅ 여기
+    "customConditions": ["react-native"],  // (필요 시) 여기에 두세요
+    "resolveJsonModule": true,
+    "noEmit": true
   },
   "include": [
     "**/*.ts",

@@ -1,142 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Button, ActivityIndicator, Alert, Linking, Dimensions } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router, Stack } from 'expo-router';
-import { BarcodeScanningResult } from 'expo-camera/build/Camera.types';
-import OverlayWithHole from '../OverlayWithHole'; 
+import { router } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
-export default function ScannerScreen() {
+export default function ReceiptScanScreen() {
+  const cameraRef = useRef<CameraView | null>(null);
+  const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (permission === null) {
-      requestPermission();
-    }
-  }, [permission, requestPermission]);
-
-const handleBarCodeScanned = (scanningResult: BarcodeScanningResult) => {
-  if (!scanned) {
-    setScanned(true);
-    const { type, data } = scanningResult;
-
-    if (data === '8801056241506') {
-      router.push(`/scan-result/${data}`);
-      return;
-    }
-
-    Alert.alert(
-      '바코드 스캔 완료!',
-      `바코드 타입: ${type}\n데이터: ${data}`,
-      [
-        {
-          text: '확인',
-          onPress: () => {
-            router.push(`/scan-result/${encodeURIComponent(data)}`);
-            setScanned(false);
-          },
-        },
-      ]
-    );
-  }
-};
-
-
-
-  if (permission === null) {
+  if (!permission) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#00D16E" />
-        <Text style={styles.permissionText}>카메라 권한 요청 중...</Text>
+      <View style={styles.center}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 10 }}>권한 상태 확인 중…</Text>
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.permissionText}>카메라 접근 권한이 거부되었습니다.</Text>
-        <Button
-          title="권한 설정으로 이동"
-          onPress={() => {
-            Alert.alert(
-              "권한 필요",
-              "카메라를 사용하려면 기기 설정에서 권한을 허용해주세요.",
-              [{ text: "확인", onPress: () => Linking.openSettings() }]
-            );
-          }}
-          color="#FF6347"
-        />
+      <View style={styles.center}>
+        <Text style={styles.permissionText}>카메라 권한이 필요합니다.</Text>
+        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+          <Text style={styles.permissionButtonText}>권한 요청</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: '바코드 스캔' }} />
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        onBarcodeScanned={handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr", "ean13", "code128", "datamatrix"],
-        }}
-        onCameraReady={() => console.log('Camera is ready')}
-      >
-        <OverlayWithHole />
-        <View style={styles.instructionContainer}>
-          <Text style={styles.instruction}>바코드를 사각형 안에 비춰주세요</Text>
-        </View>
-      </CameraView>
+  const onCapture = async () => {
+    try {
+      setBusy(true);
 
-      {scanned && (
-        <View style={styles.rescanButton}>
-          <Button
-            title="다시 스캔"
-            onPress={() => setScanned(false)}
-            color="#00D16E"
-          />
-        </View>
+      // 실제 촬영은 하되 결과는 사용하지 않음(디자인 데모용)
+      await cameraRef.current?.takePictureAsync();
+
+      // 데모용 인식 결과(예시 데이터)와 함께 결과 화면으로 이동
+      const demoItems = [
+        { name: '펩시 제로 콜라 355ml', quantity: 1, material: 'CAN' },
+        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
+        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
+        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
+      ];
+
+      router.push({
+        pathname: '/scanResult',
+        params: { data: JSON.stringify(demoItems) },
+      });
+    } catch (e) {
+      console.error('📸 촬영 실패:', e);
+      Alert.alert('촬영 오류', '문제가 발생했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {isFocused && (
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          autofocus="on"
+        >
+          <View style={styles.guideBox} />
+          <View style={styles.captionWrap}>
+            <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
+          </View>
+        </CameraView>
       )}
-    </SafeAreaView>
+
+      <View style={styles.controls}>
+        <TouchableOpacity onPress={onCapture} style={styles.captureButton} disabled={busy}>
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.captureText}>촬영</Text>}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f4f7',
-  },
-  permissionText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginHorizontal: 20,
-    marginTop: 10,
-    color: '#333',
-  },
-  instructionContainer: {
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, position: 'relative', backgroundColor: '#000' },
+
+  guideBox: {
     position: 'absolute',
-    bottom: 160,
-    width: '100%',
+    top: `${GUIDE.topPct * 100}%`,
+    left: `${GUIDE.sidePct * 100}%`,
+    right: `${GUIDE.sidePct * 100}%`,
+    height: `${GUIDE.heightPct * 100}%`,
+    borderColor: '#00FF00',
+    borderWidth: 2,
+    borderRadius: 8,
+  },
+  captionWrap: { position: 'absolute', bottom: '16%', width: '100%', alignItems: 'center' },
+  caption: { color: '#fff', fontSize: 14, fontWeight: '500', opacity: 0.9 },
+
+  controls: { position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' },
+  captureButton: {
+    backgroundColor: '#06D16E',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 30,
+    minWidth: 120,
     alignItems: 'center',
   },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
+  captureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  permissionText: { fontSize: 16, marginBottom: 16 },
+  permissionButton: {
     paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#06D16E',
+    borderRadius: 20,
   },
-  rescanButton: {
-    position: 'absolute',
-    bottom: 50,
-    alignSelf: 'center',
-    zIndex: 1,
-  }
+  permissionButtonText: { color: '#fff', fontWeight: 'bold' },
 });
