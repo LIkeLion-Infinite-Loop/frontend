@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-// InputField 대신 TextInput을 직접 import 합니다.
+import { api } from '../lib/api';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 import { useTheme } from '@/context/ThemeContext';
@@ -15,7 +15,6 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const { isDarkMode } = useTheme();
 
-  // --- 테마 관련 스타일 변수는 그대로 사용합니다 ---
   const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
   const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
   const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
@@ -25,7 +24,6 @@ export default function LoginScreen() {
   const linkSeparatorColor = isDarkMode ? '#777777' : '#999999';
   const passwordToggleColor = isDarkMode ? '#BBBBBB' : '#9FA6B2';
 
-  // --- 나머지 로직은 변경사항 없습니다 ---
   useEffect(() => {
     const loadRememberedEmail = async () => {
       try {
@@ -81,19 +79,9 @@ export default function LoginScreen() {
     }
   };
 
-  const fetchUserInfo = async (token) => {
-    try {
-      const response = await axios.get('http://40.233.103.122:8080/api/users/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.status === 200) {
-        setUserInfo(response.data);
-        await AsyncStorage.setItem('userInfo', JSON.stringify(response.data));
-        console.log('내 정보 조회 성공:', response.data);
-      }
-    } catch (error) {
-      console.error('내 정보 조회 오류:', error);
-    }
+  const fetchUserInfo = async () => {
+    const res = await api.get('/api/users/me');
+    await AsyncStorage.setItem('userInfo', JSON.stringify(res.data));
   };
     
   return (
