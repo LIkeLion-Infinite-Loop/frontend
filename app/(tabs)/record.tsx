@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { api } from "../lib/api";
+import { api } from "../../lib/api";
 
 type Disposal = {
   history_id?: number; // 중복/undefined일 수 있음

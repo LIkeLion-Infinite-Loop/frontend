@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { api } from '../lib/api';
+import { api } from '../../lib/api';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';

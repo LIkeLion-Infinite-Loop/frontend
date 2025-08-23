@@ -1,4 +1,3 @@
-// app/scanResult.tsx
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -17,7 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { api } from "./lib/api";
+import { api } from "../lib/api";
 
 type ApiItem = {
   item_id: number;

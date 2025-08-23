@@ -1,8 +1,9 @@
+// app/receiptScan.tsx (예시 경로)
 import { useIsFocused } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { api } from "../lib/api"; // 네가 만든 axios 인스턴스
+import { api } from "../../lib/api"; // 너의 axios 인스턴스
 
 const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
@@ -21,6 +22,7 @@ export default function ReceiptScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
 
+  // 권한 객체가 아직 로딩 전
   if (!permission) {
     return (
       <View style={styles.center}>
@@ -30,14 +32,12 @@ export default function ReceiptScanScreen() {
     );
   }
 
+  // 권한 미허용
   if (!permission.granted) {
     return (
       <View style={styles.center}>
         <Text style={styles.permissionText}>카메라 권한이 필요합니다.</Text>
-        <TouchableOpacity
-          onPress={requestPermission}
-          style={styles.permissionButton}
-        >
+        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
           <Text style={styles.permissionButtonText}>권한 요청</Text>
         </TouchableOpacity>
       </View>
@@ -46,20 +46,21 @@ export default function ReceiptScanScreen() {
 
   const onCapture = async () => {
     try {
+      if (busy) return;
       setBusy(true);
 
-      // 1. 사진 촬영
+      // 1) 촬영
       const photo = await cameraRef.current?.takePictureAsync({ base64: false });
       if (!photo?.uri) throw new Error("사진 촬영 실패");
 
-      // 2. 용량 제한(1MB) 대비 → 리사이즈/압축
+      // 2) 리사이즈/압축 (서버 1MB 제한 대비)
       const manipulated = await ImageManipulator.manipulateAsync(
         photo.uri,
         [{ resize: { width: 1080 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      // 3. FormData로 서버 업로드
+      // 3) 업로드
       const formData = new FormData();
       formData.append("file", {
         uri: manipulated.uri,
@@ -76,7 +77,7 @@ export default function ReceiptScanScreen() {
       const receiptId = res.data?.receipt_id;
       if (!receiptId) throw new Error("receipt_id 없음");
 
-      // 4. 결과 화면으로 이동
+      // 4) 결과 화면 이동
       router.push({
         pathname: "/scanResult",
         params: { receiptId: String(receiptId) },
@@ -91,28 +92,27 @@ export default function ReceiptScanScreen() {
 
   return (
     <View style={styles.container}>
+      {/* 1) CameraView: 자식 없이 단독 */}
       {isFocused && (
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
           facing="back"
           autofocus="on"
-        >
-          <View style={styles.guideBox} />
-          <View style={styles.captionWrap}>
-            <Text style={styles.caption}>
-              박스 안에 맞춰 영수증을 찍어주세요
-            </Text>
-          </View>
-        </CameraView>
+        />
       )}
 
+      {/* 2) 오버레이: 카메라 '바깥'에 형제 View로 절대배치 */}
+      <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+        <View style={styles.guideBox} />
+        <View style={styles.captionWrap}>
+          <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
+        </View>
+      </View>
+
+      {/* 3) 하단 컨트롤 */}
       <View style={styles.controls}>
-        <TouchableOpacity
-          onPress={onCapture}
-          style={styles.captureButton}
-          disabled={busy}
-        >
+        <TouchableOpacity onPress={onCapture} style={styles.captureButton} disabled={busy}>
           {busy ? (
             <ActivityIndicator color="#fff" />
           ) : (
