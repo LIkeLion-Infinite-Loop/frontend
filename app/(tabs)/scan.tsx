@@ -1,7 +1,8 @@
-import { useIsFocused } from '@react-navigation/native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { useIsFocused } from "@react-navigation/native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ImageManipulator from "expo-image-manipulator";
+import { router } from "expo-router";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +10,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
+import { api } from "../lib/api"; // 네가 만든 axios 인스턴스
 
 const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
@@ -32,7 +34,10 @@ export default function ReceiptScanScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.permissionText}>카메라 권한이 필요합니다.</Text>
-        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+        <TouchableOpacity
+          onPress={requestPermission}
+          style={styles.permissionButton}
+        >
           <Text style={styles.permissionButtonText}>권한 요청</Text>
         </TouchableOpacity>
       </View>
@@ -43,24 +48,42 @@ export default function ReceiptScanScreen() {
     try {
       setBusy(true);
 
-      // 실제 촬영은 하되 결과는 사용하지 않음(디자인 데모용)
-      await cameraRef.current?.takePictureAsync();
+      // 1. 사진 촬영
+      const photo = await cameraRef.current?.takePictureAsync({ base64: false });
+      if (!photo?.uri) throw new Error("사진 촬영 실패");
 
-      // 데모용 인식 결과(예시 데이터)와 함께 결과 화면으로 이동
-      const demoItems = [
-        { name: '펩시 제로 콜라 355ml', quantity: 1, material: 'CAN' },
-        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
-        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
-        { name: '제주 삼다수 500ml', quantity: 2, material: 'PLASTIC' },
-      ];
+      // 2. 용량 제한(1MB) 대비 → 리사이즈/압축
+      const manipulated = await ImageManipulator.manipulateAsync(
+        photo.uri,
+        [{ resize: { width: 1080 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
 
-      router.push({
-        pathname: '/scanResult',
-        params: { data: JSON.stringify(demoItems) },
+      // 3. FormData로 서버 업로드
+      const formData = new FormData();
+      formData.append("file", {
+        uri: manipulated.uri,
+        type: "image/jpeg",
+        name: `receipt_${Date.now()}.jpg`,
+      } as any);
+
+      const res = await api.post("/api/receipts/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-    } catch (e) {
-      console.error('📸 촬영 실패:', e);
-      Alert.alert('촬영 오류', '문제가 발생했습니다.');
+
+      console.log("📤 업로드 성공:", res.data);
+
+      const receiptId = res.data?.receipt_id;
+      if (!receiptId) throw new Error("receipt_id 없음");
+
+      // 4. 결과 화면으로 이동
+      router.push({
+        pathname: "/scanResult",
+        params: { receiptId: String(receiptId) },
+      });
+    } catch (e: any) {
+      console.error("📸 업로드/분석 실패:", e);
+      Alert.alert("실패", e?.message || "Network request failed");
     } finally {
       setBusy(false);
     }
@@ -77,14 +100,24 @@ export default function ReceiptScanScreen() {
         >
           <View style={styles.guideBox} />
           <View style={styles.captionWrap}>
-            <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
+            <Text style={styles.caption}>
+              박스 안에 맞춰 영수증을 찍어주세요
+            </Text>
           </View>
         </CameraView>
       )}
 
       <View style={styles.controls}>
-        <TouchableOpacity onPress={onCapture} style={styles.captureButton} disabled={busy}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.captureText}>촬영</Text>}
+        <TouchableOpacity
+          onPress={onCapture}
+          style={styles.captureButton}
+          disabled={busy}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.captureText}>촬영</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -92,39 +125,50 @@ export default function ReceiptScanScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { flex: 1, position: 'relative', backgroundColor: '#000' },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  container: { flex: 1, position: "relative", backgroundColor: "#000" },
 
   guideBox: {
-    position: 'absolute',
+    position: "absolute",
     top: `${GUIDE.topPct * 100}%`,
     left: `${GUIDE.sidePct * 100}%`,
     right: `${GUIDE.sidePct * 100}%`,
     height: `${GUIDE.heightPct * 100}%`,
-    borderColor: '#00FF00',
+    borderColor: "#00FF00",
     borderWidth: 2,
     borderRadius: 8,
   },
-  captionWrap: { position: 'absolute', bottom: '16%', width: '100%', alignItems: 'center' },
-  caption: { color: '#fff', fontSize: 14, fontWeight: '500', opacity: 0.9 },
+  captionWrap: {
+    position: "absolute",
+    bottom: "16%",
+    width: "100%",
+    alignItems: "center",
+  },
+  caption: { color: "#fff", fontSize: 14, fontWeight: "500", opacity: 0.9 },
 
-  controls: { position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' },
+  controls: {
+    position: "absolute",
+    bottom: 40,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
   captureButton: {
-    backgroundColor: '#06D16E',
+    backgroundColor: "#06D16E",
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 30,
     minWidth: 120,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  captureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  captureText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
 
   permissionText: { fontSize: 16, marginBottom: 16 },
   permissionButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#06D16E',
+    backgroundColor: "#06D16E",
     borderRadius: 20,
   },
-  permissionButtonText: { color: '#fff', fontWeight: 'bold' },
+  permissionButtonText: { color: "#fff", fontWeight: "bold" },
 });
