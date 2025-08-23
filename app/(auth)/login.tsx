@@ -6,6 +6,7 @@ import { api } from '../lib/api';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
+import { useSinglePress } from '@/hooks/useSinglePress';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -13,8 +14,9 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { isDarkMode } = useTheme();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const single = useSinglePress();
 
-  // ——— 퀴즈 화면 팔레트로 색상 통일 ———
   const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
   const inputFieldBackgroundColor = isDarkMode ? '#111317' : '#FFFFFF';
   const inputFieldBorderColor     = isDarkMode ? '#26272B' : '#E5E7EB';
@@ -39,39 +41,63 @@ export default function LoginScreen() {
     loadRememberedEmail();
   }, []);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('입력 오류', '이메일과 비밀번호 모두 입력해주세요.');
-      return;
-    }
-    try {
-      const response = await axios.post('http://40.233.103.122:8080/api/users/login', { email, password });
-      if (response.status === 200 || response.status === 201) {
-        const token = response.data.access_token;
-        const refreshToken = response.data.refresh_token;
+const handleLogin = async () => {
+  // 🔒 연타/중복 호출 방지
+  if (isLoggingIn) return;
 
-        if (token && refreshToken) {
-          await AsyncStorage.setItem('userToken', token);
-          await AsyncStorage.setItem('refreshToken', refreshToken);
-          if (response.data.email) await AsyncStorage.setItem('userEmail', response.data.email);
+  if (!email || !password) {
+    Alert.alert('입력 오류', '이메일과 비밀번호 모두 입력해주세요.');
+    return;
+  }
 
-          if (rememberMe) await AsyncStorage.setItem('rememberedEmail', email);
-          else await AsyncStorage.removeItem('rememberedEmail');
+  setIsLoggingIn(true);
+  try {
+    const response = await axios.post(
+      'http://40.233.103.122:8080/api/users/login',
+      { email: email.trim(), password }
+    );
 
-          Alert.alert('로그인 성공', '환영합니다!');
-          await fetchUserInfo(); // api 인스턴스가 토큰 헤더를 처리한다고 가정
-          router.replace('/(tabs)');
-        } else {
-          Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
-        }
-      } else {
-        Alert.alert('로그인 실패', '예상치 못한 응답 상태 코드입니다.');
+    if (response.status === 200 || response.status === 201) {
+      const token = response.data?.access_token;
+      const refreshToken = response.data?.refresh_token;
+
+      if (!token || !refreshToken) {
+        Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
+        return;
       }
-    } catch (error: any) {
-      console.error('로그인 오류:', error);
-      Alert.alert('로그인 오류', error?.response?.data?.message || '서버에 문제가 발생했습니다.');
+
+      // 토큰/이메일 저장(멀티셋으로 I/O 최소화)
+      const emailForStore = response.data?.email ?? email.trim();
+      await AsyncStorage.multiSet([
+        ['userToken', token],
+        ['refreshToken', refreshToken],
+        ['userEmail', emailForStore],
+      ]);
+
+      // (선택) api 인스턴스에 바로 Authorization 주입
+      try { api.defaults.headers.common.Authorization = `Bearer ${token}`; } catch {}
+
+      // 유저 정보 갱신
+      await fetchUserInfo();
+
+      Alert.alert('로그인 성공', '환영합니다!');
+      // 스택 중복 방지
+      router.replace('/(tabs)');
+      
+      // 아이디 저장 옵션 반영
+      if (rememberMe) await AsyncStorage.setItem('rememberedEmail', emailForStore);
+      else await AsyncStorage.removeItem('rememberedEmail');
+    } else {
+      Alert.alert('로그인 실패', `예상치 못한 상태 코드: ${response.status}`);
     }
-  };
+  } catch (error: any) {
+    console.error('로그인 오류:', error);
+    Alert.alert('로그인 오류', error?.response?.data?.message || '서버에 문제가 발생했습니다.');
+  } finally {
+    setIsLoggingIn(false);
+  }
+};
+
 
   const fetchUserInfo = async () => {
     const res = await api.get('/api/users/me');
@@ -130,15 +156,15 @@ export default function LoginScreen() {
       </TouchableOpacity>
 
       <View style={styles.linksRow}>
-        <TouchableOpacity onPress={() => router.push('/signup')} style={styles.linkBox}>
+        <TouchableOpacity onPress={single(() => router.push('/signup'))} style={styles.linkBox}>
           <Text style={[styles.linkText, { color: linkTextColor }]}>가입하기</Text>
         </TouchableOpacity>
         <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text>
-        <TouchableOpacity onPress={() => router.push('/findId')} style={styles.linkBox}>
+        <TouchableOpacity onPress={single(() => router.push('/findId'))} style={styles.linkBox}>
           <Text style={[styles.linkText, { color: linkTextColor }]}>아이디 찾기</Text>
         </TouchableOpacity>
         <Text style={[styles.linkSeparator, { color: linkSeparatorColor }]}>|</Text>
-        <TouchableOpacity onPress={() => router.push('/resetPassword')} style={styles.linkBox}>
+        <TouchableOpacity onPress={single(() => router.push('/resetPassword'))} style={styles.linkBox}>
           <Text style={[styles.linkText, { color: linkTextColor }]}>비밀번호 재설정</Text>
         </TouchableOpacity>
       </View>

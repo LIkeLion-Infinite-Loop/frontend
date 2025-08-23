@@ -3,30 +3,37 @@ import { Image } from 'expo-image';
 import { Text, View, SafeAreaView, StyleSheet, ScrollView, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
 
-// 1. 필요한 컴포넌트와 '우리가 만든' 최종 데이터를 불러옵니다.
 import SearchInput from '@/components/common/SearchInput';
 import CategoryGrid from '@/components/layout/CategoryGrid';
 import RecyclingInfoModal from '@/components/modals/RecyclingInfoModal';
-import { CATEGORIES_LIST } from '@/constants/categoryDisplayData'; // 👈 수정됨: RECYCLING_DATA 대신 CATEGORIES_LIST 사용
+import { CATEGORIES_LIST } from '@/constants/categoryDisplayData';
+
+/** ===== 공통 팔레트 (퀴즈/로그인과 통일) ===== */
+const COLORS = {
+  primary: '#06D16E',
+  bgLight: '#F3F4F6',
+  bgDark: '#121212',
+  surfaceLight: '#FFFFFF',
+  surfaceDark: '#1F1F1F',
+  textLight: '#111827',
+  textDark: '#E0E0E0',
+  borderLight: '#e5e7eb',
+  borderDark: '#333333',
+};
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
   const [isModalVisible, setModalVisible] = useState(false);
-  // 👈 수정됨: state의 타입을 any로 변경하여 유연성 확보
   const [selectedCategoryData, setSelectedCategoryData] = useState<any | null>(null);
 
   const handleSearchSubmit = (query: string) => {
     if (query.trim()) {
-      router.push(`/search-result?query=${query}`); // search-result 경로로 수정 (expo-router 규칙)
+      router.push(`/search-result?query=${encodeURIComponent(query.trim())}`);
     }
   };
 
-  /**
-   * 👈 수정됨: handleCategoryPress 함수를 CATEGORIES_LIST 배열을 사용하도록 변경
-   * CategoryGrid에서 '금속', '플라스틱' 같은 한글 이름(categoryName)을 넘겨받습니다.
-   */
   const handleCategoryPress = (categoryName: string) => {
     const categoryInfo = CATEGORIES_LIST.find(cat => cat.name === categoryName);
     if (categoryInfo) {
@@ -35,18 +42,12 @@ export default function HomeScreen() {
     }
   };
 
-  const handleCloseModal = () => {
-    setModalVisible(false);
-  };
-
-  // 다크 모드에 따른 동적 스타일 (이 부분은 그대로 사용합니다. 아주 좋습니다!)
-  const containerStyle = isDarkMode ? styles.darkContainer : styles.safeArea;
-  const textStyle = isDarkMode ? styles.darkText : styles.categoryText;
-  const dividerStyle = isDarkMode ? styles.darkDividerLine : styles.dividerLine;
+  const handleCloseModal = () => setModalVisible(false);
 
   return (
-    <SafeAreaView style={containerStyle}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? COLORS.bgDark : COLORS.bgLight }]}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        {/* 로고 영역 */}
         <View style={styles.topDecorationArea}>
           <Image
             source={require('../../assets/images/logo.png')}
@@ -54,17 +55,41 @@ export default function HomeScreen() {
             contentFit="contain"
           />
         </View>
+
+        {/* 검색 */}
         <View style={styles.searchArea}>
-          <SearchInput placeholder="재활용품을 검색해주세요!" onSearch={handleSearchSubmit} />
-        </View>
-        <View style={dividerStyle} />
-        <View style={styles.textArea}>
-          <Text style={textStyle}>카테고리</Text>
+          <SearchInput
+            placeholder="재활용품을 검색해주세요!"
+            onSearch={handleSearchSubmit}
+          />
         </View>
 
+        {/* 구분선 */}
+        <View
+          style={[
+            styles.dividerLine,
+            { backgroundColor: isDarkMode ? COLORS.borderDark : COLORS.borderLight },
+          ]}
+        />
+
+        {/* 섹션 타이틀 */}
+        <View style={styles.titleRow}>
+          <View style={[styles.titleBadge, { backgroundColor: COLORS.primary }]} />
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: isDarkMode ? COLORS.textDark : COLORS.textLight },
+            ]}
+          >
+            카테고리
+          </Text>
+        </View>
+
+        {/* 카테고리 그리드 */}
         <CategoryGrid onCategoryPress={handleCategoryPress} />
       </ScrollView>
 
+      {/* 모달 */}
       <RecyclingInfoModal
         isVisible={isModalVisible}
         onClose={handleCloseModal}
@@ -74,64 +99,50 @@ export default function HomeScreen() {
   );
 }
 
-// 스타일 정의 (이 부분은 그대로 사용합니다.)
+/** ===== 스타일 (팔레트만 반영, 구조/컴포넌트는 그대로) ===== */
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  darkContainer: {
-    flex: 1,
-    backgroundColor: '#121212',
   },
   scrollViewContent: {
     flexGrow: 1,
   },
   topDecorationArea: {
-    height: 300,
+    height: 220,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
   logoImage: {
-    width: 211,
-    height: 211,
+    width: 200,
+    height: 200,
     resizeMode: 'contain',
   },
   searchArea: {
     paddingHorizontal: 20,
-    marginTop: -50,
-    marginBottom: 20,
-  },
-  textArea: {
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  categoryText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 10,
-  },
-  darkText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#E0E0E0',
-    marginBottom: 10,
+    marginTop: -36, // 살짝 오버랩 느낌 유지(로그인/퀴즈 톤)
+    marginBottom: 16,
   },
   dividerLine: {
     height: 1,
-    backgroundColor: '#E0E0E0',
-    width: '90%',
+    width: '92%',
     alignSelf: 'center',
-    marginVertical: 20,
+    marginVertical: 16,
+    borderRadius: 1,
   },
-  darkDividerLine: {
-    height: 1,
-    backgroundColor: '#444444',
-    width: '90%',
-    alignSelf: 'center',
-    marginVertical: 20,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  titleBadge: {
+    width: 8,
+    height: 20,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
   },
 });
