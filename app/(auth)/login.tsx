@@ -3,26 +3,26 @@ import axios from 'axios';
 import { router } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native'; 
-import { MaterialCommunityIcons } from '@expo/vector-icons'; 
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userInfo, setUserInfo] = useState(null); 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { isDarkMode } = useTheme();
 
+  // ——— 퀴즈 화면 팔레트로 색상 통일 ———
   const containerStyle = isDarkMode ? styles.darkContainer : styles.container;
-  const inputFieldBackgroundColor = isDarkMode ? '#333333' : '#FFFFFF';
-  const inputFieldBorderColor = isDarkMode ? '#555555' : '#E0E0E0';
-  const inputFieldTextColor = isDarkMode ? '#E0E0E0' : '#333333';
-  const rememberMeTextColor = isDarkMode ? '#BBBBBB' : '#666666';
-  const linkTextColor = isDarkMode ? '#AAAAAA' : '#666666';
-  const linkSeparatorColor = isDarkMode ? '#777777' : '#999999';
-  const passwordToggleColor = isDarkMode ? '#BBBBBB' : '#9FA6B2';
+  const inputFieldBackgroundColor = isDarkMode ? '#111317' : '#FFFFFF';
+  const inputFieldBorderColor     = isDarkMode ? '#26272B' : '#E5E7EB';
+  const inputFieldTextColor       = isDarkMode ? '#E5E7EB' : '#111827';
+  const rememberMeTextColor       = isDarkMode ? '#9CA3AF' : '#6B7280';
+  const linkTextColor             = isDarkMode ? '#A1A1AA' : '#374151';
+  const linkSeparatorColor        = isDarkMode ? '#6B7280' : '#9CA3AF';
+  const passwordToggleColor       = isDarkMode ? '#9CA3AF' : '#6B7280';
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
@@ -38,44 +38,38 @@ export default function LoginScreen() {
     };
     loadRememberedEmail();
   }, []);
-  
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('입력 오류', '이메일과 비밀번호 모두 입력해주세요.');
       return;
     }
     try {
-
       const response = await axios.post('http://40.233.103.122:8080/api/users/login', { email, password });
-      console.log('응답 데이터:', response.data);
-
       if (response.status === 200 || response.status === 201) {
-        const token = response.data.access_token; 
+        const token = response.data.access_token;
         const refreshToken = response.data.refresh_token;
 
         if (token && refreshToken) {
           await AsyncStorage.setItem('userToken', token);
           await AsyncStorage.setItem('refreshToken', refreshToken);
-          if (response.data.email) {
-            await AsyncStorage.setItem('userEmail', response.data.email);
-          }
-          if (rememberMe) {
-            await AsyncStorage.setItem('rememberedEmail', email);
-          } else {
-            await AsyncStorage.removeItem('rememberedEmail');
-          }
+          if (response.data.email) await AsyncStorage.setItem('userEmail', response.data.email);
+
+          if (rememberMe) await AsyncStorage.setItem('rememberedEmail', email);
+          else await AsyncStorage.removeItem('rememberedEmail');
+
           Alert.alert('로그인 성공', '환영합니다!');
-          await fetchUserInfo(token);
-          router.replace('/(tabs)'); // 로그인 후 뒤로가기 방지를 위해 push 대신 replace 사용
+          await fetchUserInfo(); // api 인스턴스가 토큰 헤더를 처리한다고 가정
+          router.replace('/(tabs)');
         } else {
           Alert.alert('로그인 실패', '토큰을 찾을 수 없습니다.');
         }
       } else {
         Alert.alert('로그인 실패', '예상치 못한 응답 상태 코드입니다.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('로그인 오류:', error);
-      Alert.alert('로그인 오류', error.response?.data?.message || '서버에 문제가 발생했습니다.');
+      Alert.alert('로그인 오류', error?.response?.data?.message || '서버에 문제가 발생했습니다.');
     }
   };
 
@@ -83,31 +77,36 @@ export default function LoginScreen() {
     const res = await api.get('/api/users/me');
     await AsyncStorage.setItem('userInfo', JSON.stringify(res.data));
   };
-    
+
   return (
     <View style={containerStyle}>
       <Image source={require('../../assets/images/gr_biugo.png')} style={styles.logo} />
 
       <View style={styles.form}>
-        {/* InputField를 TextInput으로 교체 */}
-        <TextInput 
-          placeholder="이메일 또는 아이디" 
-          value={email} 
-          onChangeText={setEmail} 
-          style={[styles.inputFieldCommon, { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }]} 
+        <TextInput
+          placeholder="이메일 또는 아이디"
+          value={email}
+          onChangeText={setEmail}
+          style={[
+            styles.inputFieldCommon,
+            { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor },
+          ]}
           placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
           autoCapitalize="none"
           keyboardType="email-address"
         />
 
         <View style={styles.passwordInputContainer}>
-          {/* InputField를 TextInput으로 교체 */}
           <TextInput
             placeholder="비밀번호"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry={!showPassword} 
-            style={[styles.inputFieldCommon, styles.passwordInputFieldSpecific, { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor }]} 
+            secureTextEntry={!showPassword}
+            style={[
+              styles.inputFieldCommon,
+              styles.passwordInputFieldSpecific,
+              { backgroundColor: inputFieldBackgroundColor, borderColor: inputFieldBorderColor, color: inputFieldTextColor },
+            ]}
             placeholderTextColor={isDarkMode ? '#888888' : '#9FA6B2'}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.togglePasswordVisibility}>
@@ -116,13 +115,17 @@ export default function LoginScreen() {
         </View>
 
         <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={styles.rememberMeContainer}>
-          <MaterialCommunityIcons name={rememberMe ? 'checkbox-marked' : 'checkbox-blank-outline'} size={20} color={isDarkMode ? '#04c75a' : '#05D16E'} />
+          <MaterialCommunityIcons
+            name={rememberMe ? 'checkbox-marked' : 'checkbox-blank-outline'}
+            size={20}
+            color="#06D16E" // 포인트 그린 고정
+          />
           <Text style={[styles.rememberMeText, { color: rememberMeTextColor }]}>아이디 저장하기</Text>
-        </TouchableOpacity> 
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Image source={require('../../assets/images/earth.png')} style={styles.earth} />
+      <TouchableOpacity style={[styles.loginButton, { backgroundColor: '#111827' }]} onPress={handleLogin}>
+        {/* <Image source={require('../../assets/images/earth.png')} style={styles.earth} /> */}
         <Text style={styles.loginButtonText}>로그인</Text>
       </TouchableOpacity>
 
@@ -143,61 +146,61 @@ export default function LoginScreen() {
   );
 }
 
-// --- 스타일 시트는 변경사항 없습니다 ---
+/* =================== Styles =================== */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: '#F3F4F6', 
     paddingHorizontal: 24,
-    justifyContent: 'space-between', 
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 80, 
-    paddingBottom: 50, 
+    paddingTop: 80,
+    paddingBottom: 50,
   },
   darkContainer: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#0B0B0D', 
     paddingHorizontal: 24,
-    justifyContent: 'space-between', 
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 80, 
-    paddingBottom: 50, 
+    paddingTop: 80,
+    paddingBottom: 50,
   },
   logo: {
-    width: 260, 
-    height: 200, 
+    width: 260,
+    height: 200,
     resizeMode: 'contain',
-    marginTop: 30 
+    marginTop: 30,
   },
   form: {
     width: '100%',
-    gap: 16, 
+    gap: 16,
     marginBottom: 20,
     alignItems: 'center',
   },
   inputFieldCommon: {
-    width: '100%', 
-    paddingHorizontal: 16, 
-    paddingVertical: 12, 
-    borderWidth: 1, 
-    fontSize: 16, 
-    fontFamily: 'NotoSansKRRegular', 
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    fontSize: 16,
+    fontFamily: 'NotoSansKRRegular',
     borderRadius: 8,
   },
   passwordInputContainer: {
-    position: 'relative', 
-    width: '100%', 
+    position: 'relative',
+    width: '100%',
   },
   passwordInputFieldSpecific: {
-    paddingRight: 50, 
+    paddingRight: 50,
   },
   togglePasswordVisibility: {
     position: 'absolute',
-    right: 15, 
-    top: '50%', 
+    right: 15,
+    top: '50%',
     transform: [{ translateY: -12 }],
-    padding: 5, 
-    zIndex: 1, 
+    padding: 5,
+    zIndex: 1,
   },
   rememberMeContainer: {
     flexDirection: 'row',
@@ -206,54 +209,53 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: '100%',
     paddingHorizontal: 10,
-  }, 
+  },
   rememberMeText: {
     marginLeft: 8,
     fontSize: 14,
     fontFamily: 'NotoSansKRRegular',
   },
   loginButton: {
-    backgroundColor: '#05D16E', 
-    paddingVertical: 15, 
-    borderRadius: 10, 
-    width: '50%', 
+    paddingVertical: 15,
+    borderRadius: 10,
+    width: '50%',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative', 
-    overflow: 'hidden', 
-    marginBottom: 30, 
+    position: 'relative',
+    overflow: 'hidden',
+    marginBottom: 30,
   },
   earth: {
-    width: '100%', 
-    height: 120, 
+    width: '100%',
+    height: 120,
     resizeMode: 'contain',
-    opacity: 0.1, 
-    position: 'absolute', 
+    opacity: 0.08,
+    position: 'absolute',
   },
   loginButtonText: {
-    fontSize: 22, 
+    fontSize: 22,
     fontFamily: 'NotoSansKRRegular',
-    color: '#FFFFFF', 
-    fontWeight: 'bold', 
-    zIndex: 1, 
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    zIndex: 1,
   },
   linksRow: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly', 
+    justifyContent: 'space-evenly',
     alignItems: 'center',
-    width: '100%', 
-    marginTop: 20, 
+    width: '100%',
+    marginTop: 20,
   },
   linkBox: {
     alignItems: 'center',
-    paddingHorizontal: 5, 
+    paddingHorizontal: 5,
   },
   linkText: {
-    fontSize: 14, 
+    fontSize: 14,
     fontFamily: 'NotoSansKRRegular',
   },
   linkSeparator: {
     fontSize: 14,
-    marginHorizontal: 5, 
+    marginHorizontal: 5,
   },
 });
