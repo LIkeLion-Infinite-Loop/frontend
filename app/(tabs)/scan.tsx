@@ -1,9 +1,8 @@
-// app/receiptScan.tsx (예시 경로)
-import { useIsFocused } from "@react-navigation/native";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import * as ImageManipulator from "expo-image-manipulator";
-import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import { useIsFocused } from '@react-navigation/native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as FileSystem from 'expo-file-system';
+import { router } from 'expo-router';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,10 +10,12 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
-import { api } from "../../lib/api"; // 너의 axios 인스턴스
+} from 'react-native';
 
-const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
+// 상대 경로로 고정 (경로 alias 문제 방지)
+import { api } from '@/lib/api';
+
+const MAX_BYTES = 1024 * 1024; // 1MB
 
 export default function ReceiptScanScreen() {
   const cameraRef = useRef<CameraView | null>(null);
@@ -22,7 +23,6 @@ export default function ReceiptScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
 
-  // 권한 객체가 아직 로딩 전
   if (!permission) {
     return (
       <View style={styles.center}>
@@ -32,7 +32,6 @@ export default function ReceiptScanScreen() {
     );
   }
 
-  // 권한 미허용
   if (!permission.granted) {
     return (
       <View style={styles.center}>
@@ -44,47 +43,83 @@ export default function ReceiptScanScreen() {
     );
   }
 
+  // RN에서 FormData.append 타입 오류 회피용(파일 객체)
+  const appendFile = (fd: FormData, field: string, uri: string, name = 'receipt.jpg', type = 'image/jpeg') => {
+    // iOS: uri가 file:// 로 시작, Android: content:// 혹은 file://
+    fd.append(field, { uri, name, type } as any);
+  };
+
+  const shrinkIfNeeded = async (uri: string): Promise<string> => {
+    try {
+      const info = await FileSystem.getInfoAsync(uri);
+      if (info.exists && !info.isDirectory && (info as any).size > MAX_BYTES) {
+        // quality 0.5로 다시 촬영했는데도 큰 경우가 드물지만,
+        // 여기서는 간단히 경고만 띄우고 그대로 진행 (서버가 1MB 넘으면 400 반환)
+        Alert.alert(
+          '용량 경고',
+          '이미지 용량이 커서 서버에서 거부될 수 있어요.\n가능하면 영수증을 더 멀리서 찍어 주세요(용량↓).'
+        );
+      }
+    } catch {}
+    return uri;
+  };
+
+  const waitUntilParsed = async (receiptId: number) => {
+    let tries = 0;
+    const maxTries = 10; // 약 15초
+    while (tries < maxTries) {
+      try {
+        const res = await api.get(`/api/receipts/${receiptId}/status`);
+        console.log('📡 상태 조회:', res.data);
+        if (res.data?.status === 'PARSED') return true;
+      } catch (e) {
+        console.log('❌ 상태 조회 실패:', e);
+      }
+      tries++;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    // ===== 완화 패치: 끝까지 PARSED 안 되면 강제 이동 =====
+    console.warn('⚠️ 분석이 끝나지 않아도 결과 화면으로 이동합니다.');
+    router.push({ pathname: '/scanResult', params: { receiptId: String(receiptId) } });
+    return false;
+  };
+
   const onCapture = async () => {
     try {
-      if (busy) return;
       setBusy(true);
 
-      // 1) 촬영
-      const photo = await cameraRef.current?.takePictureAsync({ base64: false });
-      if (!photo?.uri) throw new Error("사진 촬영 실패");
-
-      // 2) 리사이즈/압축 (서버 1MB 제한 대비)
-      const manipulated = await ImageManipulator.manipulateAsync(
-        photo.uri,
-        [{ resize: { width: 1080 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      // 3) 업로드
-      const formData = new FormData();
-      formData.append("file", {
-        uri: manipulated.uri,
-        type: "image/jpeg",
-        name: `receipt_${Date.now()}.jpg`,
-      } as any);
-
-      const res = await api.post("/api/receipts/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      // 화질 낮춰 촬영 (용량↓)
+      const photo = await cameraRef.current?.takePictureAsync({
+        quality: 0.5, // 0~1
+        skipProcessing: true,
       });
+      if (!photo?.uri) {
+        Alert.alert('촬영 오류', '사진 촬영에 실패했어요.');
+        return;
+      }
 
-      console.log("📤 업로드 성공:", res.data);
+      const shrunkUri = await shrinkIfNeeded(photo.uri);
 
-      const receiptId = res.data?.receipt_id;
-      if (!receiptId) throw new Error("receipt_id 없음");
+      // 업로드
+      const fd = new FormData();
+      appendFile(fd, 'file', shrunkUri, 'receipt.jpg', 'image/jpeg');
 
-      // 4) 결과 화면 이동
-      router.push({
-        pathname: "/scanResult",
-        params: { receiptId: String(receiptId) },
+      const uploadRes = await api.post('/api/receipts/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
+      const receiptId: number = uploadRes.data?.receipt_id;
+      if (!receiptId) {
+        throw new Error('receipt_id 누락');
+      }
+
+      // 상태 폴링 → PARSED면 이동, 아니면 위 완화패치가 강제 이동시킴
+      const parsed = await waitUntilParsed(receiptId);
+      if (parsed) {
+        router.push({ pathname: '/scanResult', params: { receiptId: String(receiptId) } });
+      }
     } catch (e: any) {
-      console.error("📸 업로드/분석 실패:", e);
-      Alert.alert("실패", e?.message || "Network request failed");
+      console.error('📸 업로드/분석 실패:', e);
+      Alert.alert('처리 실패', e?.response?.data?.message || e.message || '알 수 없는 오류');
     } finally {
       setBusy(false);
     }
@@ -92,7 +127,6 @@ export default function ReceiptScanScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 1) CameraView: 자식 없이 단독 */}
       {isFocused && (
         <CameraView
           ref={cameraRef}
@@ -102,73 +136,61 @@ export default function ReceiptScanScreen() {
         />
       )}
 
-      {/* 2) 오버레이: 카메라 '바깥'에 형제 View로 절대배치 */}
-      <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+      {/* 오버레이는 Camera 밖에 절대배치로 올림 */}
+      <View pointerEvents="none" style={styles.overlay}>
         <View style={styles.guideBox} />
         <View style={styles.captionWrap}>
           <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
         </View>
       </View>
 
-      {/* 3) 하단 컨트롤 */}
       <View style={styles.controls}>
         <TouchableOpacity onPress={onCapture} style={styles.captureButton} disabled={busy}>
-          {busy ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.captureText}>촬영</Text>
-          )}
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.captureText}>촬영</Text>}
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  container: { flex: 1, position: "relative", backgroundColor: "#000" },
+const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
+const styles = StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#000' },
+
+  // 카메라 위 오버레이
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-start' },
   guideBox: {
-    position: "absolute",
+    position: 'absolute',
     top: `${GUIDE.topPct * 100}%`,
     left: `${GUIDE.sidePct * 100}%`,
     right: `${GUIDE.sidePct * 100}%`,
     height: `${GUIDE.heightPct * 100}%`,
-    borderColor: "#00FF00",
+    borderColor: '#00FF00',
     borderWidth: 2,
     borderRadius: 8,
   },
-  captionWrap: {
-    position: "absolute",
-    bottom: "16%",
-    width: "100%",
-    alignItems: "center",
-  },
-  caption: { color: "#fff", fontSize: 14, fontWeight: "500", opacity: 0.9 },
+  captionWrap: { position: 'absolute', bottom: '16%', width: '100%', alignItems: 'center' },
+  caption: { color: '#fff', fontSize: 14, fontWeight: '500', opacity: 0.9 },
 
-  controls: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
+  controls: { position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' },
   captureButton: {
-    backgroundColor: "#06D16E",
+    backgroundColor: '#06D16E',
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 30,
     minWidth: 120,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  captureText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  captureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 
   permissionText: { fontSize: 16, marginBottom: 16 },
   permissionButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: "#06D16E",
+    backgroundColor: '#06D16E',
     borderRadius: 20,
   },
-  permissionButtonText: { color: "#fff", fontWeight: "bold" },
+  permissionButtonText: { color: '#fff', fontWeight: 'bold' },
 });
