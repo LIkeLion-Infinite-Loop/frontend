@@ -1,232 +1,162 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
-import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { api } from "../lib/api";
-
-type ApiItem = {
-  item_id: number;
-  name: string;
-  quantity: number;
-  category: string; // "CAN" | "PLASTIC" | ...
-  guide_page_url?: string;
-};
+// app/scanResult.tsx
+import { api } from '@/lib/api'; // <-- 별칭이 안 잡히면 ../lib/api 로 변경
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type Item = {
-  id: number;
+  item_id?: number; // 서버 아이디(있을 수도, 없을 수도)
+  id?: string;      // 클라이언트 임시 아이디
   name: string;
   quantity: number;
-  category: string;
-  guide_page_url?: string;
+  category?: string; // 서버 명세는 category
+  material?: string; // 내부 표시에 사용
 };
 
-const BUILTIN_CATEGORIES = [
-  "PLASTIC",
-  "CAN",
-  "PAPER",
-  "GLASS",
-  "VINYL",
-  "PAPER_PACK",
-  "FOOD",
-  "ETC",
-] as const;
-
 export default function ScanResultScreen() {
-  const { receiptId } = useLocalSearchParams<{ receiptId: string }>();
-  const rid = Number(receiptId);
+  const { receiptId, data } = useLocalSearchParams<{ receiptId?: string; data?: string }>();
 
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  // 초기 리스트 (param의 data가 있으면 사용, 없으면 빈 배열)
+  const initialItems: Item[] = React.useMemo(() => {
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        return parsed.map((v: any, idx: number) => ({
+          item_id: v.item_id,
+          id: String(v.id ?? idx),
+          name: String(v.name ?? '제품'),
+          quantity: Number(v.quantity ?? 1),
+          category: String(v.category ?? v.material ?? 'ETC'),
+          material: String(v.category ?? v.material ?? 'ETC'),
+        }));
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  }, [data]);
 
-  // ====== 팝업 상태 ======
+  const [items, setItems] = useState<Item[]>(initialItems);
+  const [saving, setSaving] = useState(false);
+
+  // ====== 추가/수정 팝업 ======
   const [modalVisible, setModalVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number>(-1); // -1: 추가
-  const [formName, setFormName] = useState("");
-  const [formQty, setFormQty] = useState<string>("1");
-  const [formCat, setFormCat] = useState<string>("PLASTIC"); // 기본값
-  const [formCatMode, setFormCatMode] = useState<"PICK" | "CUSTOM">("PICK");
-  const [formCatCustom, setFormCatCustom] = useState("");
+  const [formName, setFormName] = useState('');
+  const [formQty, setFormQty] = useState('1');
+  const [formCat, setFormCat] = useState<'CAN' | 'PLASTIC' | 'PAPER' | 'GLASS' | 'VINYL' | 'ETC'>('PLASTIC');
+  const [customCat, setCustomCat] = useState(''); // “기타(직접입력)”용
 
-  const normalized = (s?: string) => (s || "").trim().toUpperCase();
-
-  /** 상단 합계 */
-  const { canCount, plasticCount } = useMemo(() => {
-    let can = 0;
-    let plastic = 0;
-    for (const it of items) {
-      const cat = normalized(it.category);
-      if (cat === "CAN") can += it.quantity;
-      if (cat === "PLASTIC") plastic += it.quantity;
-    }
-    return { canCount: can, plasticCount: plastic };
-  }, [items]);
-
-  /** 색상 태그 */
-  const tagStyleFor = (cat: string) => {
-    const c = normalized(cat);
-    if (c === "CAN") return styles.tagCan;
-    if (c === "PLASTIC") return styles.tagPlastic;
-    if (c === "PAPER") return styles.tagPaper;
-    if (c === "GLASS") return styles.tagGlass;
-    if (c === "VINYL") return styles.tagVinyl;
-    if (c === "FOOD") return styles.tagFood;
-    if (c === "PAPER_PACK") return styles.tagPack;
-    return styles.tagEtc;
-    // ETC or custom
-  };
-
-  /** 데이터 가져오기 */
-  const loadItems = useCallback(async () => {
-    if (!rid || Number.isNaN(rid)) {
-      Alert.alert("오류", "receiptId가 없습니다.");
-      return;
-    }
-    try {
-      setLoading(true);
-      const res = await api.get(`/api/receipts/${rid}/items`);
-      const list: ApiItem[] = res.data?.items ?? [];
-      setItems(
-        list.map((v) => ({
-          id: v.item_id,
-          name: v.name,
-          quantity: v.quantity,
-          category: v.category,
-          guide_page_url: v.guide_page_url,
-        }))
-      );
-    } catch (e: any) {
-      console.log("[ERR] /items", e?.response?.data || e?.message);
-      Alert.alert("불러오기 실패", "인식 결과를 가져오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, [rid]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadItems();
-    }, [loadItems])
-  );
-
-  /** 팝업 열기 */
   const openEditModal = (index: number) => {
     setEditingIndex(index);
     if (index >= 0) {
       const t = items[index];
-      setFormName(t?.name ?? "");
+      setFormName(t?.name ?? '');
       setFormQty(String(t?.quantity ?? 1));
-      const cat = normalized(t?.category) as string;
-      if (BUILTIN_CATEGORIES.includes(cat as any)) {
-        setFormCatMode("PICK");
-        setFormCat(cat);
-        setFormCatCustom("");
-      } else {
-        setFormCatMode("CUSTOM");
-        setFormCat("ETC");
-        setFormCatCustom(t?.category ?? "");
-      }
+      const base = (t?.category || t?.material || 'ETC').toUpperCase();
+      const known = ['CAN', 'PLASTIC', 'PAPER', 'GLASS', 'VINYL', 'ETC'] as const;
+      setFormCat(known.includes(base as any) ? (base as any) : 'ETC');
+      setCustomCat(!known.includes(base as any) ? base : '');
     } else {
-      setFormName("");
-      setFormQty("1");
-      setFormCatMode("PICK");
-      setFormCat("PLASTIC");
-      setFormCatCustom("");
+      setFormName('');
+      setFormQty('1');
+      setFormCat('PLASTIC');
+      setCustomCat('');
     }
     setModalVisible(true);
   };
   const closeModal = () => setModalVisible(false);
 
-  /** 저장(추가/수정) */
-  const saveModal = async () => {
+  const saveModal = () => {
     const qty = Math.max(1, Number.isFinite(Number(formQty)) ? Number(formQty) : 1);
-    const name = formName.trim() || "제품";
-    const category =
-      formCatMode === "CUSTOM"
-        ? normalized(formCatCustom) || "ETC"
-        : normalized(formCat);
+    const name = formName.trim().length ? formName.trim() : '제품';
+    const finalCat = (formCat === 'ETC' && customCat.trim()) ? customCat.trim().toUpperCase() : formCat;
+
+    const next: Item = {
+      ...(editingIndex >= 0 ? { item_id: items[editingIndex].item_id, id: items[editingIndex].id } : { id: String(Date.now()) }),
+      name,
+      quantity: qty,
+      category: finalCat,
+      material: finalCat,
+    };
+
+    setItems(prev => {
+      if (editingIndex >= 0) {
+        const cp = [...prev];
+        cp[editingIndex] = next;
+        return cp;
+      }
+      return [...prev, next];
+    });
+
+    setModalVisible(false);
+  };
+
+  // 상단 합계
+  const { canCount, plasticCount } = useMemo(() => {
+    let can = 0, plastic = 0;
+    for (const it of items) {
+      const cat = (it.category || it.material || '').toUpperCase();
+      if (cat === 'CAN') can += it.quantity ?? 0;
+      if (cat === 'PLASTIC') plastic += it.quantity ?? 0;
+    }
+    return { canCount: can, plasticCount: plastic };
+  }, [items]);
+
+  // 확정하기
+  const confirmAll = async () => {
+    if (!receiptId) {
+      Alert.alert('오류', '영수증 ID가 없습니다.');
+      return;
+    }
+    if (!items.length) return;
 
     try {
-      setBusy(true);
-      if (editingIndex >= 0) {
-        const target = items[editingIndex];
-        await api.patch(`/api/receipts/${rid}/items/${target.id}`, {
-          name,
-          quantity: qty,
-          category,
-        });
-      } else {
-        await api.post(`/api/receipts/${rid}/items`, {
-          name,
-          quantity: qty,
-          category,
+      setSaving(true);
+      // 선택 기능이 없으므로 현재 목록 전체 확정
+      const selectedIds = items
+        .map(it => (typeof it.item_id === 'number' ? it.item_id : undefined))
+        .filter((v): v is number => typeof v === 'number');
+
+      // 서버 아이디가 없는(로컬에서 추가한) 아이템은 먼저 서버에 추가
+      const localOnly = items.filter(it => typeof it.item_id !== 'number');
+      for (const it of localOnly) {
+        await api.post(`/api/receipts/${receiptId}/items`, {
+          name: it.name,
+          quantity: it.quantity,
+          category: (it.category || it.material || 'ETC').toUpperCase(),
         });
       }
-      await loadItems();
-      setModalVisible(false);
+
+      // 다시 목록을 받아서(아이디 확보) 전부 확정
+      const listRes = await api.get(`/api/receipts/${receiptId}/items`);
+      const allIds: number[] = (listRes.data?.items || []).map((v: any) => v.item_id);
+      const body = { selected_item_ids: allIds.length ? allIds : selectedIds };
+
+      await api.post(`/api/receipts/${receiptId}/confirm`, body);
+
+      Alert.alert('완료', '기록에 반영되었습니다.');
+      router.replace('/(tabs)/record');
     } catch (e: any) {
-      console.log("❌ save error", e?.response?.data || e?.message);
-      Alert.alert("실패", "항목 저장 중 오류가 발생했습니다.");
+      console.error('확정 실패', e?.response?.data || e?.message);
+      Alert.alert('실패', e?.response?.data?.message || '확정 중 오류가 발생했습니다.');
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   };
 
-  /** 삭제 */
-  const removeItem = async (index: number) => {
-    const target = items[index];
-    if (!target) return;
-    try {
-      setBusy(true);
-      await api.delete(`/api/receipts/${rid}/items/${target.id}`);
-      await loadItems();
-    } catch (e: any) {
-      console.log("❌ delete error", e?.response?.data || e?.message);
-      Alert.alert("실패", "항목 삭제 중 오류가 발생했습니다.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  /** 확정(기록 반영) */
-  const confirmItems = async () => {
-    try {
-      setBusy(true);
-      const selectedIds = items.map((it) => it.id);
-      await api.post(`/api/receipts/${rid}/confirm`, {
-        selected_item_ids: selectedIds,
-      });
-      Alert.alert("완료", "기록에 반영되었습니다.");
-      router.push("/(tabs)/record");
-    } catch (e: any) {
-      console.log("❌ confirm error", e?.response?.data || e?.message);
-      Alert.alert("실패", "확정 중 오류가 발생했습니다.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
+  // 리스트 렌더
   const renderItem = ({ item, index }: { item: Item; index: number }) => {
+    const cat = (item.category || item.material || '').toUpperCase();
+    const isCan = cat === 'CAN';
+    const isPlastic = cat === 'PLASTIC';
+
     return (
       <View style={styles.card}>
         <View style={{ flex: 1 }}>
-          <Text numberOfLines={1} style={styles.name}>
-            {item.name}
-          </Text>
+          <Text numberOfLines={1} style={styles.name}>{item.name}</Text>
 
           <View style={styles.metaRow}>
             <View style={styles.qtyWrap}>
@@ -234,41 +164,28 @@ export default function ScanResultScreen() {
               <Text style={styles.qtyValue}>{item.quantity}</Text>
             </View>
 
-            <View style={[styles.tag, tagStyleFor(item.category)]}>
-              <Text style={styles.tagText}>{normalized(item.category)}</Text>
+            <View style={[
+              styles.tag,
+              isCan && styles.tagCan,
+              isPlastic && styles.tagPlastic,
+              !isCan && !isPlastic && styles.tagEtc,
+            ]}>
+              <Text style={styles.tagText}>{cat || 'ETC'}</Text>
             </View>
           </View>
         </View>
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-          <TouchableOpacity
-            onPress={() => openEditModal(index)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialCommunityIcons name="pencil" size={20} color="#2E2E2E" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert("삭제", "이 항목을 삭제할까요?", [
-                { text: "취소", style: "cancel" },
-                { text: "삭제", style: "destructive", onPress: () => removeItem(index) },
-              ])
-            }
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialCommunityIcons name="trash-can-outline" size={20} color="#B3261E" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => openEditModal(index)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <MaterialCommunityIcons name="pencil" size={20} color="#2E2E2E" />
+        </TouchableOpacity>
       </View>
     );
   };
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: "인식한 제품" }} />
-
-      {/* 상단 요약 */}
       <Text style={styles.title}>인식한 제품</Text>
+
       <View style={styles.summaryRow}>
         <View style={styles.summaryBadge}>
           <MaterialCommunityIcons name="recycle-variant" size={18} />
@@ -281,53 +198,39 @@ export default function ScanResultScreen() {
           <Text style={styles.summaryCount}>× {plasticCount}</Text>
         </View>
       </View>
+
       <View style={styles.separator} />
 
-      {/* 본문 */}
-      {loading ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator />
-          <Text style={{ marginTop: 8, color: "#666" }}>불러오는 중…</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(it) => String(it.id)}
-          contentContainerStyle={{ paddingVertical: 8, gap: 12 }}
-          renderItem={renderItem}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={{ paddingTop: 60, alignItems: "center" }}>
-              <Text style={{ color: "#666" }}>표시할 항목이 없습니다.</Text>
-            </View>
-          }
-        />
-      )}
+      <FlatList
+        data={items}
+        keyExtractor={(it, idx) => String(it.item_id ?? it.id ?? idx)}
+        contentContainerStyle={{ paddingVertical: 8, gap: 12 }}
+        renderItem={renderItem}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#666', marginTop: 24 }}>항목이 없습니다. “추가하기”로 입력해주세요.</Text>}
+        showsVerticalScrollIndicator={false}
+      />
 
-      {/* 하단 버튼들 */}
-      <View style={styles.bottomRow}>
-        <TouchableOpacity style={[styles.bottomBtn, styles.bottomGhost]} onPress={() => openEditModal(-1)}>
-          <Text style={[styles.bottomText, { color: "#06A85A" }]}>추가하기</Text>
-        </TouchableOpacity>
+      {/* 하단 버튼 2개: 확정하기 / 추가하기 */}
+      <View style={styles.footerRow}>
         <TouchableOpacity
-          style={[styles.bottomBtn, styles.bottomPrimary]}
-          onPress={confirmItems}
-          disabled={busy || items.length === 0}
+          style={[styles.ctaBtn, items.length ? styles.ctaPrimary : styles.ctaDisabled]}
+          onPress={confirmAll}
+          disabled={!items.length || saving}
         >
-          <Text style={[styles.bottomText, { color: "#fff" }]}>확정하기</Text>
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaPrimaryText}>확정하기</Text>}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.ctaBtn, styles.ctaGhost]} onPress={() => openEditModal(-1)}>
+          <Text style={styles.ctaGhostText}>추가하기</Text>
         </TouchableOpacity>
       </View>
 
       {/* ===== 팝업(추가/수정) ===== */}
       <Modal visible={modalVisible} animationType="fade" transparent onRequestClose={closeModal}>
         <Pressable style={styles.backdrop} onPress={closeModal}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={styles.modalCenter}
-            pointerEvents="box-none"
-          >
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalCenter} pointerEvents="box-none">
             <Pressable style={styles.modalCard} onPress={() => {}}>
-              <Text style={styles.modalTitle}>{editingIndex >= 0 ? "수정하기" : "추가하기"}</Text>
+              <Text style={styles.modalTitle}>{editingIndex >= 0 ? '수정하기' : '추가하기'}</Text>
 
               <View style={{ gap: 10 }}>
                 <Text style={styles.inputLabel}>제품명</Text>
@@ -349,76 +252,38 @@ export default function ScanResultScreen() {
                   placeholderTextColor="#9BA1A6"
                 />
 
-                <Text style={styles.inputLabel}>카테고리</Text>
-
-                {/* 선택/직접입력 토글 */}
-                <View style={styles.catToggleRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.catToggleBtn,
-                      formCatMode === "PICK" && styles.catToggleBtnActive,
-                    ]}
-                    onPress={() => setFormCatMode("PICK")}
-                  >
-                    <Text
-                      style={[
-                        styles.catToggleText,
-                        formCatMode === "PICK" ? styles.catToggleTextActive : null,
-                      ]}
-                    >
-                      선택
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.catToggleBtn,
-                      formCatMode === "CUSTOM" && styles.catToggleBtnActive,
-                    ]}
-                    onPress={() => setFormCatMode("CUSTOM")}
-                  >
-                    <Text
-                      style={[
-                        styles.catToggleText,
-                        formCatMode === "CUSTOM" ? styles.catToggleTextActive : null,
-                      ]}
-                    >
-                      직접입력
-                    </Text>
-                  </TouchableOpacity>
+                <Text style={styles.inputLabel}>재활용 타입</Text>
+                <View style={styles.pickerWrap}>
+                  <Picker selectedValue={formCat} onValueChange={(v) => setFormCat(v)} dropdownIconColor="#2B2F33">
+                    <Picker.Item label="플라스틱" value="PLASTIC" />
+                    <Picker.Item label="캔" value="CAN" />
+                    <Picker.Item label="종이" value="PAPER" />
+                    <Picker.Item label="유리" value="GLASS" />
+                    <Picker.Item label="비닐" value="VINYL" />
+                    <Picker.Item label="기타(직접입력)" value="ETC" />
+                  </Picker>
                 </View>
 
-                {formCatMode === "PICK" ? (
-                  <View style={styles.pickerWrap}>
-                    <Picker selectedValue={formCat} onValueChange={(v) => setFormCat(String(v))}>
-                      {BUILTIN_CATEGORIES.map((c) => (
-                        <Picker.Item key={c} label={c} value={c} />
-                      ))}
-                    </Picker>
-                  </View>
-                ) : (
-                  <TextInput
-                    placeholder="예: PAPER"
-                    value={formCatCustom}
-                    onChangeText={setFormCatCustom}
-                    autoCapitalize="characters"
-                    style={styles.input}
-                    placeholderTextColor="#9BA1A6"
-                  />
+                {formCat === 'ETC' && (
+                  <>
+                    <Text style={styles.inputLabel}>직접 입력</Text>
+                    <TextInput
+                      placeholder="예: PAPER컵, CARTON 등"
+                      value={customCat}
+                      onChangeText={setCustomCat}
+                      style={styles.input}
+                      placeholderTextColor="#9BA1A6"
+                    />
+                  </>
                 )}
               </View>
 
               <View style={styles.modalBtnRow}>
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnGhost]} onPress={closeModal}>
-                  <Text style={[styles.modalBtnText, { color: "#06A85A" }]}>취소하기</Text>
+                  <Text style={[styles.modalBtnText, { color: '#06A85A' }]}>취소하기</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalBtn, styles.modalBtnPrimary]}
-                  onPress={saveModal}
-                  disabled={busy}
-                >
-                  <Text style={[styles.modalBtnText, { color: "#fff" }]}>
-                    {editingIndex >= 0 ? "저장하기" : "추가하기"}
-                  </Text>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnPrimary]} onPress={saveModal}>
+                  <Text style={[styles.modalBtnText, { color: '#fff' }]}>{editingIndex >= 0 ? '저장하기' : '추가하기'}</Text>
                 </TouchableOpacity>
               </View>
             </Pressable>
@@ -430,113 +295,86 @@ export default function ScanResultScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F6F7F9", paddingHorizontal: 20, paddingTop: 12 },
-  title: { fontSize: 20, fontWeight: "bold", color: "#222", marginBottom: 12 },
+  screen: { flex: 1, backgroundColor: '#F6F7F9', paddingHorizontal: 20, paddingTop: 12 },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#222', marginBottom: 12 },
 
-  summaryRow: { flexDirection: "row", gap: 16, alignItems: "center", marginBottom: 8 },
+  summaryRow: { flexDirection: 'row', gap: 16, alignItems: 'center', marginBottom: 8 },
   summaryBadge: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
-    backgroundColor: "#EAFBF2",
-    borderColor: "#06D16E",
+    backgroundColor: '#EAFBF2',
+    borderColor: '#06D16E',
     borderWidth: 1,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 10,
   },
-  summaryLabel: { fontSize: 12, color: "#06A85A", fontWeight: "700" },
-  summaryCount: { fontSize: 12, color: "#0B8F53", fontWeight: "700" },
+  summaryLabel: { fontSize: 12, color: '#06A85A', fontWeight: '700' },
+  summaryCount: { fontSize: 12, color: '#0B8F53', fontWeight: '700' },
 
-  separator: { height: 2, backgroundColor: "#06D16E", opacity: 0.7, marginVertical: 8, borderRadius: 2 },
+  separator: { height: 2, backgroundColor: '#06D16E', opacity: 0.7, marginVertical: 8, borderRadius: 2 },
 
   card: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     padding: 14,
     borderRadius: 14,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  name: { fontSize: 16, fontWeight: "600", color: "#222", marginBottom: 6 },
-
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  metaLabel: { fontSize: 12, color: "#666" },
+  name: { fontSize: 16, fontWeight: '600', color: '#222', marginBottom: 6 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  metaLabel: { fontSize: 12, color: '#666' },
   qtyWrap: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 6,
-    alignItems: "center",
+    alignItems: 'center',
     paddingRight: 6,
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: "#E4E6EA",
+    borderRightColor: '#E4E6EA',
   },
-  qtyValue: { fontSize: 14, color: "#111", fontWeight: "700" },
+  qtyValue: { fontSize: 14, color: '#111', fontWeight: '700' },
 
   tag: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 8 },
-  tagText: { fontSize: 12, color: "#fff", fontWeight: "700" },
-  tagCan: { backgroundColor: "#3FB765" },
-  tagPlastic: { backgroundColor: "#2F8DE4" },
-  tagPaper: { backgroundColor: "#7B6CF6" },
-  tagGlass: { backgroundColor: "#62B1A8" },
-  tagVinyl: { backgroundColor: "#00897B" },
-  tagFood: { backgroundColor: "#C67C4E" },
-  tagPack: { backgroundColor: "#9C27B0" },
-  tagEtc: { backgroundColor: "#999" },
+  tagText: { fontSize: 12, color: '#fff', fontWeight: '700' },
+  tagCan: { backgroundColor: '#3FB765' },
+  tagPlastic: { backgroundColor: '#2F8DE4' },
+  tagEtc: { backgroundColor: '#999' },
 
-  bottomRow: { flexDirection: "row", gap: 12, paddingBottom: 14, paddingTop: 6 },
-  bottomBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  bottomGhost: { backgroundColor: "#EAFBF2", borderWidth: 1, borderColor: "#06D16E" },
-  bottomPrimary: { backgroundColor: "#06D16E" },
-  bottomText: { fontSize: 16, fontWeight: "800" },
+  footerRow: { flexDirection: 'row', gap: 10, paddingVertical: 10 },
+  ctaBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  ctaPrimary: { backgroundColor: '#06D16E' },
+  ctaDisabled: { backgroundColor: '#B8E8CF' },
+  ctaGhost: { backgroundColor: '#EAFBF2', borderWidth: 1, borderColor: '#06D16E' },
+  ctaPrimaryText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  ctaGhostText: { color: '#06A85A', fontSize: 16, fontWeight: '800' },
 
-  // ===== 팝업 스타일 =====
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
-  modalCenter: { flex: 1, justifyContent: "center", paddingHorizontal: 18 },
+  // modal
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
+  modalCenter: { flex: 1, justifyContent: 'center', paddingHorizontal: 18 },
   modalCard: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  modalTitle: { fontSize: 16, fontWeight: "700", color: "#222", marginBottom: 12 },
-
-  inputLabel: { fontSize: 12, color: "#5E646A", fontWeight: "600" },
-  input: {
-    backgroundColor: "#F2F4F6",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#1D2125",
-  },
-  pickerWrap: { backgroundColor: "#F2F4F6", borderRadius: 8, overflow: "hidden" },
-
-  catToggleRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  catToggleBtn: {
-    flex: 1,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#BFEFD9",
-    backgroundColor: "#F3FCF7",
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  catToggleBtnActive: { borderColor: "#06D16E", backgroundColor: "#EAFBF2" },
-  catToggleText: { fontSize: 13, color: "#5A6A63", fontWeight: "700" },
-  catToggleTextActive: { color: "#068B53" },
-
-  modalBtnRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, marginTop: 18 },
-  modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: "center" },
-  modalBtnGhost: { backgroundColor: "#EAFBF2", borderWidth: 1, borderColor: "#06D16E" },
-  modalBtnPrimary: { backgroundColor: "#06D16E" },
-  modalBtnText: { fontSize: 15, fontWeight: "800" },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: '#222', marginBottom: 12 },
+  inputLabel: { fontSize: 12, color: '#5E646A', fontWeight: '600' },
+  input: { backgroundColor: '#F2F4F6', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, color: '#1D2125' },
+  pickerWrap: { backgroundColor: '#F2F4F6', borderRadius: 8, overflow: 'hidden' },
+  modalBtnRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 18 },
+  modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  modalBtnGhost: { backgroundColor: '#EAFBF2', borderWidth: 1, borderColor: '#06D16E' },
+  modalBtnPrimary: { backgroundColor: '#06D16E' },
+  modalBtnText: { fontSize: 15, fontWeight: '800' },
 });
