@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
 import { Image } from 'expo-image';
-import { Text, View, SafeAreaView, StyleSheet, ScrollView, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
+import { useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 import SearchInput from '@/components/common/SearchInput';
 import CategoryGrid from '@/components/layout/CategoryGrid';
 import RecyclingInfoModal from '@/components/modals/RecyclingInfoModal';
 import { CATEGORIES_LIST } from '@/constants/categoryDisplayData';
 
-/** ===== 공통 팔레트 (퀴즈/로그인과 통일) ===== */
 const COLORS = {
   primary: '#06D16E',
   bgLight: '#F3F4F6',

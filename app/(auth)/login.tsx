@@ -1,12 +1,12 @@
+import { useTheme } from '@/context/ThemeContext';
+import { useSinglePress } from '@/hooks/useSinglePress';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api } from '../../lib/api';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTheme } from '@/context/ThemeContext';
-import { useSinglePress } from '@/hooks/useSinglePress';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -106,7 +106,7 @@ const handleLogin = async () => {
 
   return (
     <View style={containerStyle}>
-      <Image source={require('../../assets/images/gr_biugo.png')} style={styles.logo} />
+      <Image source={require('../../assets/images/new_biugo.png')} style={styles.logo} />
 
       <View style={styles.form}>
         <TextInput
@@ -193,8 +193,8 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
   logo: {
-    width: 260,
-    height: 200,
+    width: 160,
+    height: 180,
     resizeMode: 'contain',
     marginTop: 30,
   },
