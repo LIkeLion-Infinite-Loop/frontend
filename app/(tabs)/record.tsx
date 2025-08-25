@@ -1,4 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+// app/(tabs)/record.tsx
+import { api } from '@/lib/api';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,9 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '@/lib/api';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type HistoryItem = {
   history_id: number;
@@ -170,9 +171,7 @@ export default function RecordScreen() {
           keyExtractor={(it) => String(it.history_id)}
           renderItem={renderItem}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={
-            <Text style={styles.empty}>확정된 기록이 없습니다.</Text>
-          }
+          ListEmptyComponent={<Text style={styles.empty}>확정된 기록이 없습니다.</Text>}
         />
       )}
     </SafeAreaView>
