@@ -205,42 +205,69 @@ export default function QuizScreen() {
     setErrorText(null);
   }, [startCountdown]);
 
-  const resumeFromActive = useCallback(async () => {
-    try {
-      const r = await api.get(`/api/quiz/sessions/active`);
-      if (r?.data?.hasActive && r?.data?.session) {
-        await hydrate(r.data.session);
-        return true;
-      }
-      return false;
-    } catch (e: any) {
-      const st = e?.response?.status;
-      if (st === 401) setErrorText("로그인이 필요합니다(401).");
-      return false;
-    }
-  }, [hydrate]);
-
-  const createSession = useCallback(async () => {
-    try {
-      const r = await api.post(`/api/quiz/sessions`, {});
-      if (r?.data?.success === false && r?.data?.error?.code === "SESSION_ALREADY_ACTIVE" && r?.data?.error?.session) {
-        await hydrate(r.data.error.session);
-        return true;
-      }
-      await hydrate(r.data);
+ // 완전 교체 추천: resumeFromActive
+const resumeFromActive = useCallback(async () => {
+  try {
+    // 1) 저장된 세션 ID 있으면 먼저 시도
+    const saved = await readActiveId();
+    if (saved) {
+      const full = await api.get(`/api/quiz/sessions/${saved}`);
+      await hydrate(full.data);
       return true;
-    } catch (e: any) {
-      const st = e?.response?.status;
-      const code = e?.response?.data?.error?.code || e?.response?.data?.code;
-      if (st === 409 || code === "SESSION_ALREADY_ACTIVE") {
-        const ok = await resumeFromActive();
-        if (ok) return true;
-        setErrorText("이미 진행 중인 세션이 있어요. 이어받기를 시도해주세요.");
-      } else if (st === 401) setErrorText("로그인이 필요합니다(401).");
-      else setErrorText(`세션 생성 실패: ${st ?? e?.message}`);
+    }
+
+    // 2) 서버 active 조회 → id만 얻어 상세 재조회
+    const r = await api.get(`/api/quiz/sessions/active`);
+    const meta = r?.data?.session;
+    if (r?.data?.hasActive && meta) {
+      const sid = meta.sessionId ?? meta.id;
+      if (sid) {
+        const full = await api.get(`/api/quiz/sessions/${sid}`);
+        await hydrate(full.data);
+        return true;
+      }
+    }
+    return false;
+  } catch (e: any) {
+    await clearActiveId();
+    const st = e?.response?.status;
+    if (st === 401 || st === 403) setErrorText("로그인이 필요합니다(권한 오류). 다시 로그인 해주세요.");
+    else setErrorText("세션 이어받기 실패: " + (e?.message || st));
+    return false;
+  }
+}, [hydrate]);
+
+const createSession = useCallback(async () => {
+  try {
+    const r = await api.post(`/api/quiz/sessions`, {});
+    // 성공이면 바로 hydrate
+    await hydrate(r.data);
+    return true;
+  } catch (e: any) {
+    const st = e?.response?.status;
+    const code = e?.response?.data?.error?.code || e?.response?.data?.code;
+
+    // 이미 활성 세션 → /active로 id 얻고 상세 re-fetch
+    if (st === 409 || code === "SESSION_ALREADY_ACTIVE") {
+      const a = await api.get(`/api/quiz/sessions/active`);
+      const meta = a?.data?.session;
+      const sid = meta?.sessionId ?? meta?.id;
+      if (a?.data?.hasActive && sid) {
+        const full = await api.get(`/api/quiz/sessions/${sid}`);
+        await hydrate(full.data);
+        return true;
+      }
+      // 그래도 실패하면 마지막 시도로 resumeFromActive
+      if (await resumeFromActive()) return true;
+      setErrorText("이미 진행 중인 세션이 있어요. 이어받기를 시도해주세요.");
       return false;
     }
-  }, [hydrate, resumeFromActive]);
+
+    if (st === 401 || st === 403) setErrorText("로그인이 필요합니다(권한 오류). 다시 로그인 해주세요.");
+    else setErrorText(`세션 생성 실패: ${st ?? e?.message}`);
+    return false;
+  }
+}, [hydrate, resumeFromActive]);
 
   const boot = useCallback(async () => {
     if (inFlightRef.current) return;
