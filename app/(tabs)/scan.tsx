@@ -3,6 +3,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
+
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +15,7 @@ import {
 
 // 상대 경로로 고정 (경로 alias 문제 방지)
 import { api } from '@/lib/api';
+
 
 const MAX_BYTES = 1024 * 1024; // 1MB
 
@@ -96,6 +98,7 @@ export default function ReceiptScanScreen() {
       if (!photo?.uri) {
         Alert.alert('촬영 오류', '사진 촬영에 실패했어요.');
         return;
+
       }
 
       const shrunkUri = await shrinkIfNeeded(photo.uri);
@@ -142,6 +145,7 @@ export default function ReceiptScanScreen() {
         <View style={styles.captionWrap}>
           <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
         </View>
+
       </View>
 
       <View style={styles.controls}>
@@ -155,12 +159,14 @@ export default function ReceiptScanScreen() {
 
 const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
+
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   container: { flex: 1, backgroundColor: '#000' },
 
   // 카메라 위 오버레이
   overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-start' },
+
   guideBox: {
     position: 'absolute',
     top: `${GUIDE.topPct * 100}%`,
@@ -170,6 +176,7 @@ const styles = StyleSheet.create({
     borderColor: '#00FF00',
     borderWidth: 2,
     borderRadius: 8,
+
   },
   captionWrap: { position: 'absolute', bottom: '16%', width: '100%', alignItems: 'center' },
   caption: { color: '#fff', fontSize: 14, fontWeight: '500', opacity: 0.9 },
