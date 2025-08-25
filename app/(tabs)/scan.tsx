@@ -1,317 +1,171 @@
 import { useIsFocused } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as FileSystem from 'expo-file-system';
 import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+
 import {
   ActivityIndicator,
   Alert,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Image as RNImage,
 } from 'react-native';
-import * as ImageManipulator from 'expo-image-manipulator';
+
+// 상대 경로로 고정 (경로 alias 문제 방지)
 import { api } from '@/lib/api';
 
-const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
+const MAX_BYTES = 1024 * 1024; // 1MB
 
-// ✅ 서버 응답(정답 제출) 새 스키마 대응
-interface AnswerResult {
-  sessionId?: number;
-  itemId: number;
-  correct: boolean;
-  correctIndex?: number; // correct_index
-  awardedPoints: number; // awarded_points
-  totalAwardedPoints?: number; // total_awarded_points
-  answeredCount?: number; // 선택: 서버가 주면 사용
-  total: number;
-  completed: boolean; // finished
-  nextItemOrder?: number; // next_item_order
-  explanation?: string; // 해설
-  submittedAt?: string;
-}
+export default function ReceiptScanScreen() {
+  const cameraRef = useRef<CameraView | null>(null);
+  const isFocused = useIsFocused();
+  const [permission, requestPermission] = useCameraPermissions();
+  const [busy, setBusy] = useState(false);
 
-/** ===== 설정/이미지 ===== */
-const ACTIVE_KEYS = ["activeQuizSessionId:shop", "activeQuizSessionId"];
-
-let treeImg: any;
-try {
-  treeImg = require("../../assets/images/tree_logo.png");
-} catch {}
-
-/** ===== 유틸 ===== */
-const secsLeft = (iso: string) =>
-  Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));
-
-const normalizeSession = (raw: any): QuizSession => ({
-  sessionId: raw?.sessionId ?? raw?.session_id ?? raw?.id,
-  expiresAt: raw?.expiresAt ?? raw?.expires_at ?? null,
-  numQuestions: raw?.numQuestions ?? raw?.num_questions ?? raw?.total ?? 3,
-  category: raw?.category ?? "etc",
-  status: (raw?.status ?? "ACTIVE") as SessionStatus,
-  answeredCount: raw?.answeredCount ?? raw?.answered_count ?? 0,
-  total: raw?.total ?? raw?.numQuestions ?? 3,
-  nextItemOrder: raw?.nextItemOrder ?? raw?.next_item_order ?? raw?.next ?? undefined,
-  attemptsLeftToday: raw?.attemptsLeftToday ?? raw?.attempts_left_today ?? undefined,
-  items: (raw?.items ?? []).map((it: any) => ({
-    itemId: it?.itemId ?? it?.item_id,
-    order: it?.order,
-    prompt: it?.prompt,
-    choices: it?.choices ?? [],
-  })),
-});
-
-// ✅ 새 응답 스키마 정상화
-const normalizeAnswer = (raw: any): AnswerResult => ({
-  sessionId: raw?.sessionId ?? raw?.session_id,
-  itemId: raw?.itemId ?? raw?.item_id,
-  correct: !!raw?.correct,
-  correctIndex: raw?.correctIndex ?? raw?.correct_index,
-  awardedPoints: raw?.awardedPoints ?? raw?.awarded_points ?? 0,
-  totalAwardedPoints: raw?.totalAwardedPoints ?? raw?.total_awarded_points,
-  answeredCount: raw?.answeredCount ?? raw?.answered_count, // 없을 수도 있음
-  total: raw?.total ?? 3,
-  completed: !!(raw?.completed ?? raw?.finished),
-  nextItemOrder: raw?.nextItemOrder ?? raw?.next_item_order,
-  explanation: raw?.explanation,
-  submittedAt: raw?.submittedAt ?? raw?.submitted_at,
-});
-
-function extractActiveSessionId(ax: AxiosError<any>): number | null {
-  const hdr = ax.response?.headers;
-  const byHeader =
-    (hdr?.["x-active-session-id"] as any) ??
-    (hdr?.["X-Active-Session-Id"] as any) ??
-    (hdr?.["x-session-id"] as any);
-  if (byHeader && !isNaN(Number(byHeader))) return Number(byHeader);
-
-  const loc = (hdr?.["location"] as string) || (hdr?.["Location"] as string);
-  if (loc) {
-    const m = loc.match(/\/sessions\/(\d+)(?:\/)?$/);
-    if (m?.[1]) return Number(m[1]);
-  }
-
-  const data = ax.response?.data;
-  for (const v of [
-    data?.sessionId,
-    data?.error?.sessionId,
-    data?.session?.sessionId,
-    data?.data?.sessionId,
-  ]) {
-    const n = Number(v);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  try {
-    const m = JSON.stringify(data).match(/"sessionId"\s*:\s*(\d+)/);
-    if (m?.[1]) return Number(m[1]);
-  } catch {}
-  return null;
-}
-
-  /** RN uri -> Blob (axios formdata 타입오류 회피) */
-  const uriToBlob = async (uri: string) => {
-    const res = await fetch(uri);
-    return await res.blob();
-  };
-
-  /** 서버가 1MB 제한 → 적당히 리사이즈/압축 */
-  const shrinkToUnder1MB = async (uri: string) => {
-    let currentUri = uri;
-    let quality = 0.8;
-
-    for (let i = 0; i < 4; i++) {
-      const blob = await uriToBlob(currentUri);
-      if (blob.size <= 1024 * 1024) return { uri: currentUri, size: blob.size };
-
-      // 크면 축소
-      const manipulated = await ImageManipulator.manipulateAsync(
-        currentUri,
-        [{ resize: { width: 1280 } }], // 길이 기준 축소
-        { compress: quality, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      currentUri = manipulated.uri;
-      quality = Math.max(0.4, quality - 0.15);
-    }
-
-    const finalBlob = await uriToBlob(currentUri);
-    return { uri: currentUri, size: finalBlob.size };
-  };
-
-  /** PARSED 될 때까지 폴링 */
-  const waitUntilParsed = async (receiptId: number, maxMs = 20000, stepMs = 1200) => {
-    const started = Date.now();
-    while (Date.now() - started < maxMs) {
-      const s = await api.get(`/api/receipts/${receiptId}/status`);
-      const status = String(s.data?.status || '').toUpperCase();
-      if (status === 'PARSED') return true;
-      await new Promise(r => setTimeout(r, stepMs));
-    }
-    return false;
-  };
-
-  /** 업로드→상태→아이템→결과화면 이동 */
-  const onCapture = async () => {
-    try {
-      const r = await api.post(`/api/quiz/sessions`, {});
-      // success:false + error.session 스냅샷 대응
-      if (r.data?.success === false && r.data?.error?.code === "SESSION_ALREADY_ACTIVE") {
-        const snapshot = r.data?.error?.session;
-        const sid = snapshot?.id ?? snapshot?.sessionId ?? snapshot?.session_id;
-        if (sid) {
-          const ok = await fetchById(Number(sid));
-          if (ok) return true;
-        }
-        setErrorText("이미 진행 중인 세션이 있어요. 이어받기를 시도해주세요.");
-        return false;
-      }
-
-      const picture = await cameraRef.current?.takePictureAsync({ quality: 0.9, skipProcessing: true });
-      if (!picture?.uri) {
-        Alert.alert('촬영 실패', '이미지를 가져오지 못했습니다.');
-        return;
-
-      }
-    } finally {
-      setLoading(false);
-      inFlightRef.current = false;
-    }
-  }, [fetchById, resumeFromActive, createSession, fetchAttemptsLeft, errorText]);
-
-  useEffect(() => {
-    boot();
-  }, [boot]);
-
-      // 1MB 이하로 축소
-      const shrunk = await shrinkToUnder1MB(picture.uri);
-
-      // 업로드 (FormData + Blob)
-      const blob = await uriToBlob(shrunk.uri);
-      const form = new FormData();
-      form.append('file', blob as any, 'receipt.jpg');
-
-      const up = await api.post('/api/receipts/upload', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const receiptId: number = Number(up.data?.receipt_id);
-      if (!receiptId) {
-        Alert.alert('업로드 실패', '영수증 ID가 없습니다.');
-        return;
-      }
-
-      // 상태 PARSED 대기
-      const ok = await waitUntilParsed(receiptId, 30000, 1200);
-      if (!ok) throw new Error('분석이 완료되지 않았습니다.');
-
-      // 아이템 미리 받아서 결과화면에 즉시 표시
-      const itemsRes = await api.get(`/api/receipts/${receiptId}/items`);
-      const items = Array.isArray(itemsRes.data?.items) ? itemsRes.data.items : [];
-
-      router.replace({
-        pathname: '/scanResult',
-        params: {
-          receiptId: String(receiptId),
-          data: JSON.stringify(items),
-        },
-      });
-    } catch (e: any) {
-      console.error('📸 업로드/분석 실패:', e?.response?.data || e?.message || e);
-      Alert.alert('실패', e?.response?.data?.message || e?.message || '분석 중 오류가 발생했습니다.');
-
-    } finally {
-      setAnswering(false);
-    }
-  },
-  [session, softExpired, answers, answering]
-);
-
-  const onFinish = useCallback(async () => {
-    // 사용자가 버튼을 눌렀을 때만 종료 처리
-    await clearActiveId();
-    await fetchAttemptsLeft();
-    setSession(null);
-    setAnswers({});
-    setShowCompletion(false);
-    setFeedback({ show: false, correct: false });
-    setErrorText("세 문제 모두 풀었어요! 오늘은 여기까지 🎉 내일 다시 도전하세요.");
-  }, [fetchAttemptsLeft]);
-
-  /** ===== 화면 ===== */
-  if (loading) {
+  if (!permission) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.centerFull}>
-          <ActivityIndicator size="large" />
-          <Text style={{ marginTop: 16 }}>퀴즈 정보를 불러오는 중…</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.center}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 10 }}>권한 상태 확인 중…</Text>
+      </View>
     );
   }
 
-      {/* 오버레이: CameraView 위에 절대배치 (children 경고 회피) */}
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'flex-start' }]}>
+  if (!permission.granted) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.permissionText}>카메라 권한이 필요합니다.</Text>
+        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+          <Text style={styles.permissionButtonText}>권한 요청</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // RN에서 FormData.append 타입 오류 회피용(파일 객체)
+  const appendFile = (fd: FormData, field: string, uri: string, name = 'receipt.jpg', type = 'image/jpeg') => {
+    // iOS: uri가 file:// 로 시작, Android: content:// 혹은 file://
+    fd.append(field, { uri, name, type } as any);
+  };
+
+  const shrinkIfNeeded = async (uri: string): Promise<string> => {
+    try {
+      const info = await FileSystem.getInfoAsync(uri);
+      if (info.exists && !info.isDirectory && (info as any).size > MAX_BYTES) {
+        // quality 0.5로 다시 촬영했는데도 큰 경우가 드물지만,
+        // 여기서는 간단히 경고만 띄우고 그대로 진행 (서버가 1MB 넘으면 400 반환)
+        Alert.alert(
+          '용량 경고',
+          '이미지 용량이 커서 서버에서 거부될 수 있어요.\n가능하면 영수증을 더 멀리서 찍어 주세요(용량↓).'
+        );
+      }
+    } catch {}
+    return uri;
+  };
+
+  const waitUntilParsed = async (receiptId: number) => {
+    let tries = 0;
+    const maxTries = 10; // 약 15초
+    while (tries < maxTries) {
+      try {
+        const res = await api.get(`/api/receipts/${receiptId}/status`);
+        console.log('📡 상태 조회:', res.data);
+        if (res.data?.status === 'PARSED') return true;
+      } catch (e) {
+        console.log('❌ 상태 조회 실패:', e);
+      }
+      tries++;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    // ===== 완화 패치: 끝까지 PARSED 안 되면 강제 이동 =====
+    console.warn('⚠️ 분석이 끝나지 않아도 결과 화면으로 이동합니다.');
+    router.push({ pathname: '/scanResult', params: { receiptId: String(receiptId) } });
+    return false;
+  };
+
+  const onCapture = async () => {
+    try {
+      setBusy(true);
+
+      // 화질 낮춰 촬영 (용량↓)
+      const photo = await cameraRef.current?.takePictureAsync({
+        quality: 0.5, // 0~1
+        skipProcessing: true,
+      });
+      if (!photo?.uri) {
+        Alert.alert('촬영 오류', '사진 촬영에 실패했어요.');
+        return;
+
+      }
+
+      const shrunkUri = await shrinkIfNeeded(photo.uri);
+
+      // 업로드
+      const fd = new FormData();
+      appendFile(fd, 'file', shrunkUri, 'receipt.jpg', 'image/jpeg');
+
+      const uploadRes = await api.post('/api/receipts/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const receiptId: number = uploadRes.data?.receipt_id;
+      if (!receiptId) {
+        throw new Error('receipt_id 누락');
+      }
+
+      // 상태 폴링 → PARSED면 이동, 아니면 위 완화패치가 강제 이동시킴
+      const parsed = await waitUntilParsed(receiptId);
+      if (parsed) {
+        router.push({ pathname: '/scanResult', params: { receiptId: String(receiptId) } });
+      }
+    } catch (e: any) {
+      console.error('📸 업로드/분석 실패:', e);
+      Alert.alert('처리 실패', e?.response?.data?.message || e.message || '알 수 없는 오류');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {isFocused && (
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          autofocus="on"
+        />
+      )}
+
+      {/* 오버레이는 Camera 밖에 절대배치로 올림 */}
+      <View pointerEvents="none" style={styles.overlay}>
         <View style={styles.guideBox} />
         <View style={styles.captionWrap}>
           <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
         </View>
-      </SafeAreaView>
-    );
-  }
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.heroWrap}>
-        {treeImg ? (
-          <Image source={treeImg} style={styles.hero} resizeMode="contain" />
-        ) : (
-          <Text style={{ fontSize: 60 }}>🌳</Text>
-        )}
       </View>
-      <Divider />
 
-      <View style={styles.container}>
-        {/* 만료 배너 */}
-        {softExpired && (
-          <View style={styles.expiredBanner}>
-            <Text style={styles.expiredText}>세션이 만료되었습니다</Text>
-            <TouchableOpacity onPress={boot} style={styles.expiredButton}>
-              <Text style={{ color: "#fff", fontWeight: "700" }}>새로 시작하기</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-      {/* 하단 컨트롤 */}
       <View style={styles.controls}>
         <TouchableOpacity onPress={onCapture} style={styles.captureButton} disabled={busy}>
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.captureText}>촬영</Text>}
         </TouchableOpacity>
       </View>
-
-      {/* 완료 오버레이(사용자 버튼으로 종료) */}
-      {showCompletion && (
-        <View style={styles.overlay}>
-          <View style={styles.overlayCard}>
-            <Text style={styles.overlayTitle}>오늘의 퀴즈 완료 🎉</Text>
-            <Text style={styles.overlayBody}>
-              정답 {correctSoFar}/{session.total} · 수고했어요!
-            </Text>
-            <Text style={[styles.overlayBody, { marginTop: 4, color: "#6b7280" }]}>오늘은 여기까지. 내일 다시 도전하세요!</Text>
-            <TouchableOpacity onPress={onFinish} style={styles.overlayBtn}>
-              <Text style={styles.overlayBtnText}>확인</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </SafeAreaView>
+    </View>
   );
 }
+
+const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
+
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   container: { flex: 1, backgroundColor: '#000' },
+
+  // 카메라 위 오버레이
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-start' },
 
   guideBox: {
     position: 'absolute',
@@ -324,14 +178,26 @@ const styles = StyleSheet.create({
     borderRadius: 8,
 
   },
-  overlayCard: {
-    width: "84%", backgroundColor: "#fff", borderRadius: 16, padding: 18,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: "#e5e7eb",
+  captionWrap: { position: 'absolute', bottom: '16%', width: '100%', alignItems: 'center' },
+  caption: { color: '#fff', fontSize: 14, fontWeight: '500', opacity: 0.9 },
+
+  controls: { position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' },
+  captureButton: {
+    backgroundColor: '#06D16E',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 30,
+    minWidth: 120,
+    alignItems: 'center',
   },
-  overlayTitle: { fontSize: 18, fontWeight: "800", color: "#111827", textAlign: "center" },
-  overlayBody: { marginTop: 8, fontSize: 14, color: "#111827", textAlign: "center" },
-  overlayBtn: {
-    marginTop: 14, backgroundColor: "#111827", borderRadius: 12, paddingVertical: 12, alignItems: "center",
+  captureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  permissionText: { fontSize: 16, marginBottom: 16 },
+  permissionButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#06D16E',
+    borderRadius: 20,
   },
-  overlayBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  permissionButtonText: { color: '#fff', fontWeight: 'bold' },
 });
