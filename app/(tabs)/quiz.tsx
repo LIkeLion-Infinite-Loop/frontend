@@ -35,15 +35,19 @@ interface QuizSession {
   items: QuizItem[];
 }
 
+// ✅ 서버 응답(정답 제출) 새 스키마 대응
 interface AnswerResult {
-  sessionId: number;
+  sessionId?: number;
   itemId: number;
   correct: boolean;
-  awardedPoints: number;
-  answeredCount: number;
+  correctIndex?: number; // correct_index
+  awardedPoints: number; // awarded_points
+  totalAwardedPoints?: number; // total_awarded_points
+  answeredCount?: number; // 선택: 서버가 주면 사용
   total: number;
-  completed: boolean;
-  nextItemOrder?: number;
+  completed: boolean; // finished
+  nextItemOrder?: number; // next_item_order
+  explanation?: string; // 해설
   submittedAt?: string;
 }
 
@@ -77,15 +81,19 @@ const normalizeSession = (raw: any): QuizSession => ({
   })),
 });
 
+// ✅ 새 응답 스키마 정상화
 const normalizeAnswer = (raw: any): AnswerResult => ({
   sessionId: raw?.sessionId ?? raw?.session_id,
   itemId: raw?.itemId ?? raw?.item_id,
   correct: !!raw?.correct,
+  correctIndex: raw?.correctIndex ?? raw?.correct_index,
   awardedPoints: raw?.awardedPoints ?? raw?.awarded_points ?? 0,
-  answeredCount: raw?.answeredCount ?? raw?.answered_count ?? 0,
+  totalAwardedPoints: raw?.totalAwardedPoints ?? raw?.total_awarded_points,
+  answeredCount: raw?.answeredCount ?? raw?.answered_count, // 없을 수도 있음
   total: raw?.total ?? 3,
-  completed: !!raw?.completed,
+  completed: !!(raw?.completed ?? raw?.finished),
   nextItemOrder: raw?.nextItemOrder ?? raw?.next_item_order,
+  explanation: raw?.explanation,
   submittedAt: raw?.submittedAt ?? raw?.submitted_at,
 });
 
@@ -141,10 +149,12 @@ function FeedbackBanner({
   visible,
   correct,
   points,
+  explanation,
 }: {
   visible: boolean;
   correct: boolean;
   points?: number;
+  explanation?: string;
 }) {
   if (!visible) return null;
   const ok = correct;
@@ -158,14 +168,12 @@ function FeedbackBanner({
         },
       ]}
     >
-      <Text
-        style={[
-          styles.feedbackText,
-          { color: ok ? "#065F46" : "#991B1B" },
-        ]}
-      >
+      <Text style={[styles.feedbackText, { color: ok ? "#065F46" : "#991B1B" }]}>
         {ok ? `정답! ${points ? `+${points}점` : ""}` : "오답입니다. 다음 문제로 이동합니다."}
       </Text>
+      {!!explanation && (
+        <Text style={styles.feedbackExplain}>💡 {explanation}</Text>
+      )}
     </View>
   );
 }
@@ -184,7 +192,7 @@ export default function QuizScreen() {
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
 
   // 문제당 피드백
-  const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; points?: number }>({
+  const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; points?: number; explanation?: string }>({
     show: false,
     correct: false,
   });
@@ -391,23 +399,22 @@ export default function QuizScreen() {
 
         const r = normalizeAnswer(res.data);
 
-        // 문제당 즉시 피드백
-        setFeedback({ show: true, correct: r.correct, points: r.awardedPoints });
+        // 문제당 즉시 피드백 (해설 포함)
+        setFeedback({ show: true, correct: r.correct, points: r.awardedPoints, explanation: r.explanation });
 
-        // 누적 정답 업데이트
-        if (r.correct) setCorrectSoFar((n) => n + 1);
-
-        // 진행 상태 업데이트
+        // 누적 정답 업데이트 (서버가 answeredCount를 안 주면 +1 추정)
         setSession((prev) =>
           prev
             ? {
                 ...prev,
-                answeredCount: r.answeredCount,
+                answeredCount: r.answeredCount ?? Math.min((prev.answeredCount ?? 0) + 1, prev.total),
                 status: r.completed ? "SUBMITTED" : prev.status,
                 nextItemOrder: r.nextItemOrder,
               }
             : prev
         );
+
+        if (r.correct) setCorrectSoFar((n) => n + 1);
 
         if (r.completed) {
           // 자동 종료 대신 완료 카드 보여주기
@@ -415,7 +422,7 @@ export default function QuizScreen() {
           return;
         }
 
-        // 다음 문항 이동
+        // 다음 문항 이동 (next_item_order 기반)
         const nextOrder = r.nextItemOrder ?? (current?.order ?? 0) + 1;
         const nextIdx = Math.max(0, Math.min((session?.items.length ?? 1) - 1, nextOrder - 1));
         setCurIdx(nextIdx);
@@ -522,8 +529,8 @@ export default function QuizScreen() {
           </View>
         )}
 
-        {/* 문제당 피드백 배너 */}
-        <FeedbackBanner visible={feedback.show} correct={feedback.correct} points={feedback.points} />
+        {/* 문제당 피드백 배너 (해설 포함) */}
+        <FeedbackBanner visible={feedback.show} correct={feedback.correct} points={feedback.points} explanation={feedback.explanation} />
 
         {/* 질문 */}
         <View style={styles.qHeader}>
@@ -574,9 +581,7 @@ export default function QuizScreen() {
             <Text style={styles.overlayBody}>
               정답 {correctSoFar}/{session.total} · 수고했어요!
             </Text>
-            <Text style={[styles.overlayBody, { marginTop: 4, color: "#6b7280" }]}>
-              오늘은 여기까지. 내일 다시 도전하세요!
-            </Text>
+            <Text style={[styles.overlayBody, { marginTop: 4, color: "#6b7280" }]}>오늘은 여기까지. 내일 다시 도전하세요!</Text>
             <TouchableOpacity onPress={onFinish} style={styles.overlayBtn}>
               <Text style={styles.overlayBtnText}>확인</Text>
             </TouchableOpacity>
@@ -645,6 +650,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   feedbackText: { fontWeight: "700", textAlign: "center" },
+  feedbackExplain: { marginTop: 6, textAlign: "center", color: "#374151" },
 
   // 완료 오버레이
   overlay: {
