@@ -264,6 +264,7 @@ const createSession = useCallback(async () => {
     }
 
     if (st === 401 || st === 403) setErrorText("로그인이 필요합니다(권한 오류). 다시 로그인 해주세요.");
+
     else setErrorText(`세션 생성 실패: ${st ?? e?.message}`);
     return false;
   }
