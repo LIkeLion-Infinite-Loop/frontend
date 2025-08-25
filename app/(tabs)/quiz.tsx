@@ -1,4 +1,3 @@
-// app/(tabs)/quiz.tsx
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
