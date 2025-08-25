@@ -1,6 +1,7 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AxiosError } from "axios";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useIsFocused } from '@react-navigation/native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { router } from 'expo-router';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,31 +10,13 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../../lib/api";
+  Image as RNImage,
+} from 'react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { api } from '@/lib/api';
 
-/** ===== 서버 타입 ===== */
-interface QuizItem {
-  itemId: number;
-  order: number; // 1..N
-  prompt: string;
-  choices: string[];
-}
-type SessionStatus = "ACTIVE" | "SUBMITTED" | "EXPIRED";
+const GUIDE = { topPct: 0.2, sidePct: 0.1, heightPct: 0.6 };
 
-interface QuizSession {
-  sessionId: number;
-  expiresAt: string | null;
-  numQuestions: number;
-  category: string;
-  status: SessionStatus;
-  answeredCount: number;
-  total: number; // 항상 3
-  nextItemOrder?: number | null;
-  attemptsLeftToday?: number;
-  items: QuizItem[];
-}
 
 // ✅ 서버 응답(정답 제출) 새 스키마 대응
 interface AnswerResult {
@@ -128,200 +111,49 @@ function extractActiveSessionId(ax: AxiosError<any>): number | null {
   return null;
 }
 
-/** ===== 저장소 ===== */
-const saveActiveId = async (id: number) => {
-  await Promise.all(ACTIVE_KEYS.map((k) => AsyncStorage.setItem(k, String(id))));
-};
-const readActiveId = async () => {
-  for (const k of ACTIVE_KEYS) {
-    const raw = await AsyncStorage.getItem(k);
-    const n = raw ? Number(raw) : NaN;
-    if (Number.isFinite(n)) return n;
-  }
-  return null;
-};
-const clearActiveId = async () => {
-  await Promise.all(ACTIVE_KEYS.map((k) => AsyncStorage.removeItem(k)));
-};
+  /** RN uri -> Blob (axios formdata 타입오류 회피) */
+  const uriToBlob = async (uri: string) => {
+    const res = await fetch(uri);
+    return await res.blob();
+  };
 
-/** ===== 피드백 배너 ===== */
-function FeedbackBanner({
-  visible,
-  correct,
-  points,
-  explanation,
-}: {
-  visible: boolean;
-  correct: boolean;
-  points?: number;
-  explanation?: string;
-}) {
-  if (!visible) return null;
-  const ok = correct;
-  return (
-    <View
-      style={[
-        styles.feedbackWrap,
-        {
-          backgroundColor: ok ? "#ECFDF5" : "#FEF2F2",
-          borderColor: ok ? "#A7F3D0" : "#FECACA",
-        },
-      ]}
-    >
-      <Text style={[styles.feedbackText, { color: ok ? "#065F46" : "#991B1B" }]}>
-        {ok ? `정답! ${points ? `+${points}점` : ""}` : "오답입니다. 다음 문제로 이동합니다."}
-      </Text>
-      {!!explanation && (
-        <Text style={styles.feedbackExplain}>💡 {explanation}</Text>
-      )}
-    </View>
-  );
-}
+  /** 서버가 1MB 제한 → 적당히 리사이즈/압축 */
+  const shrinkToUnder1MB = async (uri: string) => {
+    let currentUri = uri;
+    let quality = 0.8;
 
-/** ===== 메인 ===== */
-export default function QuizScreen() {
-  const [session, setSession] = useState<QuizSession | null>(null);
-  const [answers, setAnswers] = useState<Record<number, number | null>>({});
-  const [loading, setLoading] = useState(true);
-  const [errorText, setErrorText] = useState<string | null>(null);
-  const [remainSec, setRemainSec] = useState<number | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [curIdx, setCurIdx] = useState(0);
-  const [answering, setAnswering] = useState(false);
-  const inFlightRef = useRef(false);
-  const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
+    for (let i = 0; i < 4; i++) {
+      const blob = await uriToBlob(currentUri);
+      if (blob.size <= 1024 * 1024) return { uri: currentUri, size: blob.size };
 
-  // 문제당 피드백
-  const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; points?: number; explanation?: string }>({
-    show: false,
-    correct: false,
-  });
-
-  // 누적 정답 수 & 완료 컨트롤(사용자 버튼)
-  const [correctSoFar, setCorrectSoFar] = useState(0);
-  const [showCompletion, setShowCompletion] = useState(false);
-
-  useEffect(() => {
-    setFeedback((f) => ({ ...f, show: false }));
-  }, [curIdx]);
-
-  const softExpired = useMemo(
-    () => typeof remainSec === "number" && remainSec <= 0,
-    [remainSec]
-  );
-
-  useEffect(
-    () => () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    },
-    []
-  );
-
-  const startCountdown = useCallback((expiresAt: string | null) => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (!expiresAt) {
-      setRemainSec(null); // TTL 없음
-      return;
-    }
-    setRemainSec(secsLeft(expiresAt));
-    timerRef.current = setInterval(() => {
-      setRemainSec((prev) =>
-        typeof prev === "number" ? Math.max(prev - 1, 0) : secsLeft(expiresAt)
+      // 크면 축소
+      const manipulated = await ImageManipulator.manipulateAsync(
+        currentUri,
+        [{ resize: { width: 1280 } }], // 길이 기준 축소
+        { compress: quality, format: ImageManipulator.SaveFormat.JPEG }
       );
-    }, 1000);
-  }, []);
-
-  const hydrate = useCallback(
-    async (raw: any) => {
-      const s = normalizeSession(raw);
-      setSession(s);
-      setAttemptsLeft(null);
-
-      const map: Record<number, number | null> = {};
-      s.items.forEach((it) => (map[it.itemId] = null));
-      setAnswers(map);
-
-      // 누적 정답/완료 초기화
-      setCorrectSoFar(0);
-      setShowCompletion(false);
-
-      const nextOrder = s.nextItemOrder ?? 1;
-      const nextIdx = Math.max(
-        0,
-        Math.min(s.items.length - 1, (nextOrder || 1) - 1)
-      );
-      setCurIdx(nextIdx);
-
-      startCountdown(s.expiresAt ?? null);
-      await saveActiveId(s.sessionId);
-      setErrorText(null);
-    },
-    [startCountdown]
-  );
-
-  const fetchById = useCallback(
-    async (sid: number) => {
-      try {
-        const r = await api.get(`/api/quiz/sessions/${sid}`);
-        const fetched = normalizeSession(r.data);
-
-        if (
-          fetched.status === "EXPIRED" ||
-          (fetched.expiresAt && secsLeft(fetched.expiresAt) <= 0)
-        ) {
-          await clearActiveId();
-          return false;
-        }
-
-        await hydrate(fetched);
-        return true;
-      } catch (e: any) {
-        const st = e?.response?.status;
-        if (st === 410 || st === 404) await clearActiveId();
-        setErrorText(
-          st === 410 ? "세션이 만료되었습니다(410)." : "세션을 불러올 수 없습니다."
-        );
-        return false;
-      }
-    },
-    [hydrate]
-  );
-
-  const fetchAttemptsLeft = useCallback(async () => {
-    try {
-      const r = await api.get<{ attemptsLeftToday: number }>(
-        "/api/quiz/attempts/today"
-      );
-      setAttemptsLeft(r.data.attemptsLeftToday);
-    } catch {
-      setAttemptsLeft(null);
+      currentUri = manipulated.uri;
+      quality = Math.max(0.4, quality - 0.15);
     }
-  }, []);
 
-  const resumeFromActive = useCallback(async () => {
-    try {
-      const r = await api.get<{ hasActive: boolean; session?: any }>(
-        `/api/quiz/sessions/active`
-      );
-      if (r.data?.hasActive && r.data?.session) {
-        await hydrate(r.data.session);
-        return true;
-      }
-      return false;
-    } catch (e: any) {
-      const st = e?.response?.status;
-      if (st === 404) return false; // 엔드포인트 미구현 → 비활성 취급
-      if (st === 401) setErrorText("로그인이 필요합니다(401).");
-      else setErrorText(`활성 세션 조회 실패(/active): ${st ?? e?.message}`);
-      return false;
+    const finalBlob = await uriToBlob(currentUri);
+    return { uri: currentUri, size: finalBlob.size };
+  };
+
+  /** PARSED 될 때까지 폴링 */
+  const waitUntilParsed = async (receiptId: number, maxMs = 20000, stepMs = 1200) => {
+    const started = Date.now();
+    while (Date.now() - started < maxMs) {
+      const s = await api.get(`/api/receipts/${receiptId}/status`);
+      const status = String(s.data?.status || '').toUpperCase();
+      if (status === 'PARSED') return true;
+      await new Promise(r => setTimeout(r, stepMs));
     }
-  }, [hydrate]);
+    return false;
+  };
 
-  const createSession = useCallback(async () => {
-    setErrorText(null);
+  /** 업로드→상태→아이템→결과화면 이동 */
+  const onCapture = async () => {
     try {
       const r = await api.post(`/api/quiz/sessions`, {});
       // success:false + error.session 스냅샷 대응
@@ -336,39 +168,11 @@ export default function QuizScreen() {
         return false;
       }
 
-      await hydrate(r.data);
-      return true;
-    } catch (e: any) {
-      const st = e?.response?.status;
-      if (st === 409) {
-        const sid = extractActiveSessionId(e as AxiosError<any>);
-        if (sid && (await fetchById(sid))) return true;
-        if (await resumeFromActive()) return true;
-        setErrorText("이미 진행 중인 세션이 있어요. 이어받기를 시도해주세요.");
-      } else if (st === 401) setErrorText("인증이 필요합니다(401).");
-      else if (st === 403) setErrorText("접근이 거부되었습니다(403).");
-      else if (st === 429) {
-        setErrorText("오늘의 퀴즈 시도 횟수를 모두 사용했어요.");
-        setAttemptsLeft(0);
-      } else setErrorText(`세션 생성 실패: ${st ?? e?.message}`);
-      return false;
-    }
-  }, [hydrate, fetchById, resumeFromActive]);
+      const picture = await cameraRef.current?.takePictureAsync({ quality: 0.9, skipProcessing: true });
+      if (!picture?.uri) {
+        Alert.alert('촬영 실패', '이미지를 가져오지 못했습니다.');
+        return;
 
-  const boot = useCallback(async () => {
-    if (inFlightRef.current) return;
-    inFlightRef.current = true;
-    setLoading(true);
-    setErrorText(null);
-    try {
-      const saved = await readActiveId();
-      if (saved && (await fetchById(saved))) return;
-
-      if (await resumeFromActive()) return;
-
-      const success = await createSession();
-      if (!success && errorText == null) {
-        await fetchAttemptsLeft();
       }
     } finally {
       setLoading(false);
@@ -380,89 +184,43 @@ export default function QuizScreen() {
     boot();
   }, [boot]);
 
-  const current = session?.items[curIdx];
+      // 1MB 이하로 축소
+      const shrunk = await shrinkToUnder1MB(picture.uri);
 
-// ✅ 교체/추가: 정답 제출 함수 (서버 계약에 맞춘 snake_case 전송)
-const onSelect = useCallback(
-  async (itemId: number, idx0: number) => {
-    if (!session || softExpired || answering) return;
-    if (answers[itemId] != null) return; // 중복 제출 방지
+      // 업로드 (FormData + Blob)
+      const blob = await uriToBlob(shrunk.uri);
+      const form = new FormData();
+      form.append('file', blob as any, 'receipt.jpg');
 
-    setAnswering(true);
-    setAnswers((prev) => ({ ...prev, [itemId]: idx0 })); // 낙관적 반영
-
-    try {
-      // 서버 요구: item_id, answer_idx (모두 정수, answer_idx는 1-based)
-      const payload = {
-        item_id: Number(itemId),
-        answer_idx: Number(idx0 + 1),
-      };
-
-      const res = await api.post(
-        `/api/quiz/sessions/${session.sessionId}/answer`,
-        payload,
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      const r = normalizeAnswer(res.data);
-
-      // 피드백(해설 포함)
-      setFeedback({
-        show: true,
-        correct: r.correct,
-        points: r.awardedPoints,
-        explanation: r.explanation,
+      const up = await api.post('/api/receipts/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // 진행도/상태 갱신
-      setSession((prev) =>
-        prev
-          ? {
-              ...prev,
-              answeredCount:
-                r.answeredCount ??
-                Math.min((prev.answeredCount ?? 0) + 1, prev.total),
-              status: r.completed ? "SUBMITTED" : prev.status,
-              nextItemOrder: r.nextItemOrder,
-            }
-          : prev
-      );
-
-      if (r.correct) setCorrectSoFar((n) => n + 1);
-
-      if (r.completed) {
-        setShowCompletion(true);
+      const receiptId: number = Number(up.data?.receipt_id);
+      if (!receiptId) {
+        Alert.alert('업로드 실패', '영수증 ID가 없습니다.');
         return;
       }
 
-      // 다음 문항으로 이동 (next_item_order 우선)
-      const nextOrder = r.nextItemOrder ?? ((session.items.find(i => i.itemId === itemId)?.order ?? 0) + 1);
-      const nextIdx = Math.max(0, Math.min((session?.items.length ?? 1) - 1, nextOrder - 1));
-      setCurIdx(nextIdx);
+      // 상태 PARSED 대기
+      const ok = await waitUntilParsed(receiptId, 30000, 1200);
+      if (!ok) throw new Error('분석이 완료되지 않았습니다.');
+
+      // 아이템 미리 받아서 결과화면에 즉시 표시
+      const itemsRes = await api.get(`/api/receipts/${receiptId}/items`);
+      const items = Array.isArray(itemsRes.data?.items) ? itemsRes.data.items : [];
+
+      router.replace({
+        pathname: '/scanResult',
+        params: {
+          receiptId: String(receiptId),
+          data: JSON.stringify(items),
+        },
+      });
     } catch (e: any) {
-      const st = e?.response?.status;
-      const data = e?.response?.data;
-      const msgRaw = data?.error?.message || data?.message;
-      const codeRaw = data?.error?.code || data?.code;
+      console.error('📸 업로드/분석 실패:', e?.response?.data || e?.message || e);
+      Alert.alert('실패', e?.response?.data?.message || e?.message || '분석 중 오류가 발생했습니다.');
 
-      if (st === 400) {
-        // 400이면 형식/값 오류. 서버가 준 힌트를 그대로 노출/로그.
-        console.log("[answer 400]", JSON.stringify({ status: st, code: codeRaw, message: msgRaw, data }, null, 2));
-        Alert.alert("제출 형식 오류", `${msgRaw || "요청 형식 오류(400)"}${codeRaw ? `\n(code: ${codeRaw})` : ""}`);
-      } else if (st === 410 || st === 404) {
-        Alert.alert("세션 만료됨", "세션이 만료되었거나 찾을 수 없습니다. 새로 시작하세요.");
-        await clearActiveId();
-        setSession(null);
-      } else if (st === 401 || st === 403) {
-        Alert.alert("인증/권한 오류", msgRaw || "로그인이 필요하거나 접근이 거부되었습니다.");
-      } else {
-        console.log("[answer fail]", { status: st, data });
-        Alert.alert("오류", msgRaw || "답변 제출에 실패했습니다. 다시 시도해주세요.");
-      }
-
-      // 낙관 반영 되돌리기
-      setAnswers((prev) => ({ ...prev, [itemId]: null }));
-      setFeedback({ show: false, correct: false });
     } finally {
       setAnswering(false);
     }
@@ -493,21 +251,11 @@ const onSelect = useCallback(
     );
   }
 
-  if (!session) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.heroWrap}>
-          {treeImg ? (
-            <Image source={treeImg} style={styles.hero} resizeMode="contain" />
-          ) : (
-            <Text style={{ fontSize: 72 }}>🌳</Text>
-          )}
-        </View>
-        <Divider />
-        <View style={styles.centerBody}>
-          <Text style={styles.infoText}>
-            {errorText || "퀴즈를 시작할 수 없습니다. 잠시 후 다시 시도해주세요."}
-          </Text>
+      {/* 오버레이: CameraView 위에 절대배치 (children 경고 회피) */}
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { justifyContent: 'flex-start' }]}>
+        <View style={styles.guideBox} />
+        <View style={styles.captionWrap}>
+          <Text style={styles.caption}>박스 안에 맞춰 영수증을 찍어주세요</Text>
         </View>
       </SafeAreaView>
     );
@@ -535,48 +283,11 @@ const onSelect = useCallback(
           </View>
         )}
 
-        {/* 문제당 피드백 배너 (해설 포함) */}
-        <FeedbackBanner visible={feedback.show} correct={feedback.correct} points={feedback.points} explanation={feedback.explanation} />
-
-        {/* 질문 */}
-        <View style={styles.qHeader}>
-          <Text style={styles.qHeaderText}>Q. {session.items[curIdx]?.prompt || ""}</Text>
-        </View>
-
-        {/* 선택지 */}
-        {session.items[curIdx] && (
-          <View>
-            {session.items[curIdx].choices.map((c, idx) => {
-              const item = session.items[curIdx];
-              const selected = answers[item.itemId] === idx;
-              const label = String.fromCharCode(65 + idx);
-              return (
-                <TouchableOpacity
-                  key={`${item.itemId}-${idx}`}
-                  activeOpacity={0.9}
-                  style={[styles.pill, selected && styles.pillSelected]}
-                  onPress={() => onSelect(item.itemId, idx)}
-                  disabled={softExpired || answering || answers[item.itemId] != null}
-                >
-                  <View style={[styles.pillBadge, selected && styles.pillBadgeSelected]}>
-                    <Text style={[styles.pillBadgeText, selected && { color: "#fff" }]}>{label}</Text>
-                  </View>
-                  <Text style={[styles.pillText, selected && { color: "#fff" }]}>{c}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* 진행도 & 누적 정답 & 타이머 */}
-        <Text style={styles.progressText}>
-          진행 {session.answeredCount}/{session.total} · 정답 {correctSoFar}/{session.total}
-        </Text>
-        {typeof remainSec === "number" && (
-          <Text style={styles.timer}>
-            만료까지 {Math.floor(remainSec / 60)}:{String(remainSec % 60).padStart(2, "0")}
-          </Text>
-        )}
+      {/* 하단 컨트롤 */}
+      <View style={styles.controls}>
+        <TouchableOpacity onPress={onCapture} style={styles.captureButton} disabled={busy}>
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.captureText}>촬영</Text>}
+        </TouchableOpacity>
       </View>
 
       {/* 완료 오버레이(사용자 버튼으로 종료) */}
@@ -598,70 +309,20 @@ const onSelect = useCallback(
   );
 }
 
-function Divider() {
-  return <View style={styles.divider} />;
-}
-
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F3F4F6" },
-  centerFull: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  centerBody: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
-  heroWrap: { alignItems: "center", paddingTop: 4 },
-  hero: { width: 160, height: 160 },
-  divider: { height: 1, backgroundColor: "#e5e7eb", marginHorizontal: 16, marginVertical: 16 },
-  container: { flex: 1, paddingHorizontal: 16 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#000' },
 
-  // 질문
-  qHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
-  qHeaderText: { flex: 1, fontSize: 18, fontWeight: "600", color: "#111827", lineHeight: 28 },
+  guideBox: {
+    position: 'absolute',
+    top: `${GUIDE.topPct * 100}%`,
+    left: `${GUIDE.sidePct * 100}%`,
+    right: `${GUIDE.sidePct * 100}%`,
+    height: `${GUIDE.heightPct * 100}%`,
+    borderColor: '#00FF00',
+    borderWidth: 2,
+    borderRadius: 8,
 
-  // 선택지
-  pill: {
-    minHeight: 56, flexDirection: "row", alignItems: "center", paddingHorizontal: 16,
-    borderRadius: 28, backgroundColor: "#fff", borderWidth: StyleSheet.hairlineWidth, borderColor: "#e5e7eb",
-    marginBottom: 12,
-  },
-  pillSelected: { backgroundColor: "#06D16E", borderColor: "#10b981" },
-  pillBadge: {
-    width: 30, height: 30, borderRadius: 15, backgroundColor: "#ecfdf5", borderWidth: 1, borderColor: "#a7f3d0",
-    alignItems: "center", justifyContent: "center", marginRight: 10,
-  },
-  pillBadgeSelected: { backgroundColor: "rgba(255,255,255,0.25)", borderColor: "transparent" },
-  pillBadgeText: { fontSize: 12, fontWeight: "800", color: "#10b981" },
-  pillText: { fontSize: 15, color: "#000000ff", flexShrink: 1 },
-
-  // 진행/타이머
-  progressText: { marginTop: 8, textAlign: "center", color: "#4b5563" },
-  timer: { marginTop: 10, textAlign: "center", color: "#6b7280" },
-
-  // 안내/에러
-  infoText: { fontSize: 16, color: "#4b5563", textAlign: "center", lineHeight: 24 },
-
-  // 만료 배너
-  expiredBanner: {
-    padding: 12, backgroundColor: "#FEF2F2", borderRadius: 8, marginBottom: 12,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: "#fecaca",
-  },
-  expiredText: { color: "#991B1B", fontWeight: "700", marginBottom: 8, textAlign: "center" },
-  expiredButton: { backgroundColor: "#111827", paddingVertical: 10, borderRadius: 8, alignItems: "center" },
-
-  // 피드백 배너
-  feedbackWrap: {
-    borderWidth: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10,
-    marginBottom: 10,
-  },
-  feedbackText: { fontWeight: "700", textAlign: "center" },
-  feedbackExplain: { marginTop: 6, textAlign: "center", color: "#374151" },
-
-  // 완료 오버레이
-  overlay: {
-    position: "absolute", left: 0, right: 0, top: 0, bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", alignItems: "center",
   },
   overlayCard: {
     width: "84%", backgroundColor: "#fff", borderRadius: 16, padding: 18,
