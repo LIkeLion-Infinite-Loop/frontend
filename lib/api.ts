@@ -25,24 +25,47 @@ export const api = axios.create({
   timeout: 15000,
 });
 
+/** 유틸: FormData/Blob 여부 판단 (RN 호환) */
+const isFormDataLike = (data: any) =>
+  typeof FormData !== "undefined" && data instanceof FormData ||
+  (data && typeof data.append === "function" && Array.isArray((data as any)?._parts));
+
+const isBlobLike = (data: any) =>
+  (typeof Blob !== "undefined" && data instanceof Blob) ||
+  (data && typeof data.size === "number" && typeof data.type === "string" && typeof data.slice === "function");
+
 let isRefreshing = false;
 let waiters: Array<() => void> = [];
 
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     const isRefreshCall =
-      (config.baseURL || "") + (config.url || "") ===
+      ((config.baseURL || "") + (config.url || "")) ===
       `${API_BASE}/api/users/refresh`;
 
+    // 헤더 객체 안전화
     let headers = config.headers ?? new AxiosHeaders();
     if (!(headers instanceof AxiosHeaders)) {
       headers = AxiosHeaders.from(headers);
     }
 
+    // ✅ Content-Type 자동 설정 규칙
+    // - 이미 호출부에서 명시했다면 건드리지 않음
+    // - FormData인 경우: 절대 수동 설정 금지 (axios가 boundary 포함 자동 설정)
+    // - Blob/바이너리: octet-stream
+    // - 그 외: application/json
     if (!headers.has("Content-Type")) {
-      headers.set("Content-Type", "application/json");
+      const data = config.data;
+      if (isFormDataLike(data)) {
+        // do nothing
+      } else if (isBlobLike(data)) {
+        headers.set("Content-Type", "application/octet-stream");
+      } else {
+        headers.set("Content-Type", "application/json");
+      }
     }
 
+    // Authorization (refresh 호출은 제외)
     if (!isRefreshCall) {
       const token = await getAccessToken();
       if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -91,6 +114,7 @@ api.interceptors.response.use(
         const rt = await getRefreshToken();
         if (!rt) throw new Error("no refresh token");
 
+        // refresh는 JSON 바디 요청
         const refreshRes = await axios.post(`${API_BASE}/api/users/refresh`, {
           refresh_token: rt,
         });
